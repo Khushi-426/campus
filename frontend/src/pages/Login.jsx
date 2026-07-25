@@ -26,10 +26,14 @@ export default function Login() {
   };
 
   return (
-    <div className="container page">
-      <div className="form-card">
-        <h1 className="page-title" style={{ fontSize: 28, textAlign: 'center' }}>Welcome Back</h1>
-        <p className="page-sub" style={{ textAlign: 'center' }}>Log in to chat with sellers and manage your campus listings.</p>
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '70vh' }}>
+      <div className="form-card" style={{ width: '100%' }}>
+        <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: 26, fontWeight: 800, textAlign: 'center', color: 'var(--text-main)', marginBottom: 6 }}>
+          Welcome Back
+        </h1>
+        <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 14, marginBottom: 24 }}>
+          Log in to chat with sellers and manage your campus listings.
+        </p>
 
         {error && <div className="error-banner">{error}</div>}
 
@@ -58,13 +62,13 @@ export default function Login() {
             />
           </div>
 
-          <button className="btn btn-navy btn-block" style={{ marginTop: 12, fontSize: 16 }} disabled={loading}>
+          <button className="btn-primary" style={{ marginTop: 8 }} disabled={loading}>
             {loading ? 'Logging in...' : 'Log In'}
           </button>
         </form>
 
         <p className="helper-text">
-          Don't have an account yet? <Link to="/register" style={{ fontWeight: 600, color: 'var(--navy)' }}>Create an account</Link>
+          Don't have an account yet? <Link to="/register" style={{ fontWeight: 700, color: 'var(--primary)' }}>Create an account</Link>
         </p>
       </div>
     </div>

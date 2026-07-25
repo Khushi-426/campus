@@ -1,7 +1,8 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import Navbar from './components/Navbar';
+import Sidebar from './components/Sidebar';
+import Header from './components/Header';
 
 import Home from './pages/Home';
 import Login from './pages/Login';
@@ -11,6 +12,8 @@ import ProductDetail from './pages/ProductDetail';
 import MyListings from './pages/MyListings';
 import Chat from './pages/Chat';
 
+import Saved from './pages/Saved';
+
 function PrivateRoute({ children }) {
   const { user } = useAuth();
   return user ? children : <Navigate to="/login" replace />;
@@ -19,37 +22,55 @@ function PrivateRoute({ children }) {
 function AppRoutes() {
   return (
     <BrowserRouter>
-      <Navbar />
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/product/:id" element={<ProductDetail />} />
-        <Route
-          path="/sell"
-          element={
-            <PrivateRoute>
-              <SellItem />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/my-listings"
-          element={
-            <PrivateRoute>
-              <MyListings />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/chat"
-          element={
-            <PrivateRoute>
-              <Chat />
-            </PrivateRoute>
-          }
-        />
-      </Routes>
+      <div className="app-layout-root">
+        {/* Left Sidebar Navigation */}
+        <Sidebar />
+
+        {/* Main Content Area */}
+        <div className="app-main-viewport">
+          <Header />
+          <main className="main-content-scroll">
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/product/:id" element={<ProductDetail />} />
+              <Route
+                path="/saved"
+                element={
+                  <PrivateRoute>
+                    <Saved />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/sell"
+                element={
+                  <PrivateRoute>
+                    <SellItem />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/my-listings"
+                element={
+                  <PrivateRoute>
+                    <MyListings />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/chat"
+                element={
+                  <PrivateRoute>
+                    <Chat />
+                  </PrivateRoute>
+                }
+              />
+            </Routes>
+          </main>
+        </div>
+      </div>
     </BrowserRouter>
   );
 }

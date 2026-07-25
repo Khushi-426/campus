@@ -1,20 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import api from '../api/axios';
+import ProductCard from '../components/ProductCard';
 import { useAuth } from '../context/AuthContext';
-
-function CategorySvg({ category }) {
-  switch (category) {
-    case 'book':
-      return <svg viewBox="0 0 24 24" width="40" height="40" fill="currentColor"><path d="M18 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 4h5v8l-2.5-1.5L6 12V4z" /></svg>;
-    case 'calculator':
-      return <svg viewBox="0 0 24 24" width="40" height="40" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 14H7v-2h10v2zm0-4H7v-2h10v2zm0-4H7V7h10v2z" /></svg>;
-    case 'lab-equipment':
-      return <svg viewBox="0 0 24 24" width="40" height="40" fill="currentColor"><path d="M6 22h12a2 2 0 0 0 2-2c0-.5-.2-.9-.5-1.2L14 11.5V5h1V3H9v2h1v6.5L4.5 18.8A2 2 0 0 0 6 22zm3-8.5 2.5-3.6 2.5 3.6V20H9v-6.5z" /></svg>;
-    default:
-      return <svg viewBox="0 0 24 24" width="40" height="40" fill="currentColor"><path d="M20 6h-4V4c0-1.11-.89-2-2-2h-4c-1.11 0-2 .89-2 2v2H4c-1.11 0-1.99.89-1.99 2L2 19c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V8c0-1.11-.89-2-2-2zm-6 0h-4V4h4v2z" /></svg>;
-  }
-}
 
 export default function ProductDetail() {
   const { id } = useParams();
@@ -22,19 +10,50 @@ export default function ProductDetail() {
   const { user } = useAuth();
 
   const [product, setProduct] = useState(null);
+  const [similarItems, setSimilarItems] = useState([]);
+  const [reviews, setReviews] = useState([]);
+  const [avgRating, setAvgRating] = useState(0);
+  const [isSaved, setIsSaved] = useState(false);
   const [activeImgIdx, setActiveImgIdx] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [startingChat, setStartingChat] = useState(false);
+
+  // Review Form state
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState('');
+  const [reviewMsg, setReviewMsg] = useState('');
 
   useEffect(() => {
     let isMounted = true;
     setLoading(true);
     api.get(`/products/${id}`)
       .then(({ data }) => {
-        if (isMounted) {
-          setProduct(data.product);
-          setActiveImgIdx(0);
+        if (!isMounted) return;
+        setProduct(data.product);
+        setActiveImgIdx(0);
+
+        // Fetch seller reviews
+        if (data.product?.seller?._id) {
+          api.get(`/reviews/seller/${data.product.seller._id}`)
+            .then(({ data: revData }) => {
+              if (isMounted) {
+                setReviews(revData.reviews);
+                setAvgRating(revData.avgRating);
+              }
+            })
+            .catch(() => {});
+        }
+
+        // Fetch similar items in category
+        if (data.product?.category) {
+          api.get(`/products?category=${data.product.category}&limit=4`)
+            .then(({ data: simData }) => {
+              if (isMounted) {
+                setSimilarItems(simData.items.filter((item) => item._id !== id));
+              }
+            })
+            .catch(() => {});
         }
       })
       .catch(() => {
@@ -48,6 +67,19 @@ export default function ProductDetail() {
       isMounted = false;
     };
   }, [id]);
+
+  const handleToggleFavorite = async () => {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+    try {
+      const { data } = await api.post(`/favorites/${id}`);
+      setIsSaved(data.favorited);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const handleChatWithSeller = async () => {
     if (!user) {
@@ -65,17 +97,32 @@ export default function ProductDetail() {
     }
   };
 
+  const handleReviewSubmit = async (e) => {
+    e.preventDefault();
+    setReviewMsg('');
+    try {
+      await api.post('/reviews', { productId: id, rating, comment });
+      setReviewMsg('Thank you! Your verified review has been published.');
+      setComment('');
+      // Reload seller reviews
+      if (product?.seller?._id) {
+        const { data: revData } = await api.get(`/reviews/seller/${product.seller._id}`);
+        setReviews(revData.reviews);
+        setAvgRating(revData.avgRating);
+      }
+    } catch (err) {
+      setReviewMsg(err.response?.data?.message || 'Failed to post review.');
+    }
+  };
+
   if (loading) {
     return (
-      <div className="container" style={{ padding: '32px 20px' }}>
-        <div className="product-detail-layout">
-          <div className="skeleton-pulse" style={{ width: '100%', aspectRatio: '4/3', borderRadius: 'var(--radius-lg)' }} />
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div className="skeleton-pulse" style={{ width: '30%', height: 16 }} />
-            <div className="skeleton-pulse" style={{ width: '80%', height: 32 }} />
-            <div className="skeleton-pulse" style={{ width: '40%', height: 28 }} />
-            <div className="skeleton-pulse" style={{ width: '100%', height: 140 }} />
-          </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 32 }}>
+        <div className="skeleton-pulse" style={{ width: '100%', aspectRatio: '4/3', borderRadius: 'var(--radius-xl)' }} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div className="skeleton-pulse" style={{ width: '30%', height: 16 }} />
+          <div className="skeleton-pulse" style={{ width: '80%', height: 32 }} />
+          <div className="skeleton-pulse" style={{ width: '40%', height: 28 }} />
         </div>
       </div>
     );
@@ -83,9 +130,9 @@ export default function ProductDetail() {
 
   if (error && !product) {
     return (
-      <div className="container" style={{ padding: '40px 20px' }}>
+      <div>
         <div className="error-banner">{error}</div>
-        <Link to="/" className="btn-sell-now">← Back to Browse</Link>
+        <Link to="/" className="btn-purple-solid">← Back to Home</Link>
       </div>
     );
   }
@@ -96,136 +143,212 @@ export default function ProductDetail() {
   const images = product.images && product.images.length > 0 ? product.images : [];
   const activeImg = images[activeImgIdx];
   const price = product.price || 0;
-  const estimatedMrp = price > 0 ? Math.round(price * 2.5) : 500;
-  const savings = estimatedMrp - price;
-  const discountPercent = price > 0 ? Math.round((savings / estimatedMrp) * 100) : 100;
 
   return (
-    <div className="container" style={{ padding: '24px 20px 64px' }}>
+    <div>
       {/* Breadcrumb Trail */}
-      <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 20, display: 'flex', gap: 6, alignItems: 'center' }}>
-        <Link to="/" style={{ color: 'var(--navy-800)' }}>Home</Link>
-        <span>/</span>
-        <span style={{ textTransform: 'capitalize' }}>{product.category}</span>
-        <span>/</span>
-        <span style={{ fontWeight: 600, color: 'var(--navy-900)' }}>{product.title}</span>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+        <div style={{ fontSize: 13, color: 'var(--text-muted)', display: 'flex', gap: 6, alignItems: 'center' }}>
+          <Link to="/" style={{ color: 'var(--text-muted)' }}>Home</Link>
+          <span>›</span>
+          <span style={{ textTransform: 'capitalize' }}>{product.category}</span>
+          <span>›</span>
+          <span style={{ fontWeight: 700, color: 'var(--text-main)' }}>{product.title}</span>
+        </div>
+
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button
+            className="icon-circle-btn"
+            style={{ color: isSaved ? '#ef4444' : 'var(--text-muted)' }}
+            onClick={handleToggleFavorite}
+            title={isSaved ? 'Remove from Watchlist' : 'Save to Watchlist'}
+          >
+            <svg viewBox="0 0 24 24" width="18" height="18" fill={isSaved ? '#ef4444' : 'none'} stroke="currentColor" strokeWidth="2">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+            </svg>
+          </button>
+        </div>
       </div>
 
-      <div className="product-detail-layout">
-        {/* Gallery Section */}
-        <div className="detail-gallery-box">
-          <div className="detail-main-img-wrap">
-            {activeImg ? (
-              <img src={activeImg} alt={product.title} />
-            ) : (
-              <div className="svg-fallback-box" style={{ padding: 40 }}>
-                <CategorySvg category={product.category} />
-                <span style={{ fontSize: 13, marginTop: 8 }}>No photos provided by seller</span>
-              </div>
-            )}
-          </div>
-
+      {/* Main Two-Column Layout */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.1fr) minmax(0, 1fr)', gap: 32, alignItems: 'start' }}>
+        {/* Left Column: Gallery */}
+        <div style={{ display: 'flex', gap: 16 }}>
           {images.length > 1 && (
-            <div className="detail-thumb-strip">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {images.map((img, idx) => (
                 <button
                   key={idx}
-                  className={`thumb-btn ${activeImgIdx === idx ? 'active' : ''}`}
                   onClick={() => setActiveImgIdx(idx)}
+                  style={{
+                    width: 56,
+                    height: 56,
+                    borderRadius: 'var(--radius-md)',
+                    border: activeImgIdx === idx ? '2px solid var(--primary)' : '1px solid var(--border)',
+                    overflow: 'hidden',
+                    background: '#fff',
+                    cursor: 'pointer',
+                    padding: 0,
+                  }}
                 >
-                  <img src={img} alt={`Thumb ${idx + 1}`} />
+                  <img src={img} alt={`Thumb ${idx + 1}`} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </button>
               ))}
             </div>
           )}
-        </div>
 
-        {/* Product Details & Purchase Action Section */}
-        <div className="product-summary-col">
-          <div>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 8 }}>
-              <span className={`condition-tag tag-${(product.condition || 'good').toLowerCase().replace(/\s+/g, '-')}`} style={{ position: 'static' }}>
-                {product.condition === 'new' ? '✨ Mint / New' : product.condition === 'like-new' ? '💎 Like New' : '📖 Good Condition'}
-              </span>
-              <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>• 👁️ {product.viewCount || 0} Views</span>
-            </div>
-
-            <h1 className="product-header-title">{product.title}</h1>
-            <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
-              Category: <strong style={{ color: 'var(--navy-900)' }}>{product.category}</strong>
-            </p>
-          </div>
-
-          {/* Amazon Pricing Box */}
-          <div className="price-card-box">
-            <div className="price-heading-large">
-              {price === 0 ? 'FREE' : `₹${price.toLocaleString('en-IN')}`}
-              {price > 0 && <span className="mrp-badge-tag">{discountPercent}% OFF</span>}
-            </div>
-
-            {price > 0 && (
-              <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
-                M.R.P.: <span style={{ textDecoration: 'line-through' }}>₹{estimatedMrp.toLocaleString('en-IN')}</span>
-                <span style={{ color: 'var(--rust-600)', fontWeight: 700, marginLeft: 8 }}>
-                  Save ₹{savings.toLocaleString('en-IN')}
-                </span>
+          <div style={{ flex: 1, aspectRatio: '4/3', background: '#ffffff', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-xl)', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'var(--shadow-sm)' }}>
+            {activeImg ? (
+              <img src={activeImg} alt={product.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ) : (
+              <div style={{ color: 'var(--text-subtle)', textAlign: 'center', padding: 40 }}>
+                <span style={{ fontSize: 40, display: 'block', marginBottom: 8 }}>📦</span>
+                <span>No product image uploaded</span>
               </div>
             )}
+          </div>
+        </div>
 
-            <div style={{ marginTop: 12, fontSize: 13, color: 'var(--success-text)', display: 'flex', alignItems: 'center', gap: 6, fontWeight: 600 }}>
-              <span>🤝 Campus Hand-to-Hand Deal</span>
-              <span>•</span>
-              <span>📍 Inspect before paying</span>
+        {/* Right Column */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          <div>
+            <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: 24, fontWeight: 800, color: 'var(--text-main)', lineHeight: 1.3 }}>
+              {product.title}
+            </h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 8 }}>
+              <span style={{ fontFamily: 'var(--font-heading)', fontSize: 28, fontWeight: 800, color: 'var(--primary)' }}>
+                {price === 0 ? 'FREE' : `₹${price.toLocaleString('en-IN')}`}
+              </span>
+              <span className="negotiable-tag" style={{ fontSize: 12, padding: '4px 10px' }}>Negotiable</span>
             </div>
           </div>
 
-          {/* Description Box */}
-          <div style={{ background: '#ffffff', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', padding: 18 }}>
-            <h4 style={{ fontFamily: 'var(--font-heading)', color: 'var(--navy-900)', margin: '0 0 8px' }}>Seller Notes & Item Condition</h4>
-            <p style={{ margin: 0, lineHeight: 1.6, color: 'var(--text-main)' }}>{product.description}</p>
-          </div>
-
-          {/* Verified Senior Seller Card & Action Button */}
-          <div className="seller-trust-box">
-            <div className="seller-profile-row">
-              <div className="avatar-circle">
+          {/* Seller Card */}
+          <div style={{ background: '#ffffff', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-lg)', padding: 16, display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div className="user-avatar-wrap">
+              <div className="avatar-img" style={{ width: 44, height: 44 }}>
                 {product.seller?.name?.[0] || 'S'}
               </div>
-              <div>
-                <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--navy-900)', fontFamily: 'var(--font-heading)' }}>
-                  {product.seller?.name || 'Verified Student Seller'}
-                </div>
-                <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-                  {product.seller?.branch ? `${product.seller.branch}` : 'Senior Student'}
-                  {product.seller?.year ? ` • Year ${product.seller.year}` : ''}
-                </div>
-                <div style={{ fontSize: 12, color: 'var(--success-text)', fontWeight: 600, marginTop: 2 }}>
-                  ⚡ Responds in ~10 mins
-                </div>
+              <span className="online-dot" />
+            </div>
+            <div>
+              <div style={{ fontFamily: 'var(--font-heading)', fontWeight: 700, fontSize: 14, color: 'var(--text-main)' }}>
+                {product.seller?.name || 'Rahul Sharma'}
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                {product.seller?.branch || '3rd Year, E&TC'} • ★ {avgRating > 0 ? avgRating : '4.8'} ({reviews.length} reviews)
               </div>
             </div>
+          </div>
 
-            {isOwnListing ? (
-              <div style={{ background: 'var(--bg-paper)', padding: 12, borderRadius: 'var(--radius-sm)', fontSize: 13, color: 'var(--navy-900)', fontWeight: 600 }}>
-                💡 <strong>Your Listing:</strong> You are the owner of this item.
-              </div>
-            ) : (
+          {/* Product Info List */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, fontSize: 13, background: '#ffffff', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-lg)', padding: 16 }}>
+            <div>
+              <span style={{ color: 'var(--text-muted)' }}>Condition: </span>
+              <strong style={{ color: 'var(--text-main)', textTransform: 'capitalize' }}>{product.condition || 'Excellent'}</strong>
+            </div>
+            <div>
+              <span style={{ color: 'var(--text-muted)' }}>Category: </span>
+              <strong style={{ color: 'var(--text-main)', textTransform: 'capitalize' }}>{product.category}</strong>
+            </div>
+            <div>
+              <span style={{ color: 'var(--text-muted)' }}>Location: </span>
+              <strong style={{ color: 'var(--text-main)' }}>Hostel 1, Room 203</strong>
+            </div>
+            <div>
+              <span style={{ color: 'var(--text-muted)' }}>Status: </span>
+              <strong style={{ color: product.status === 'available' ? 'var(--success)' : 'var(--danger)', textTransform: 'uppercase' }}>
+                {product.status}
+              </strong>
+            </div>
+          </div>
+
+          {/* Description */}
+          <div>
+            <h4 style={{ fontFamily: 'var(--font-heading)', fontSize: 14, fontWeight: 700, marginBottom: 6 }}>Description</h4>
+            <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 }}>{product.description}</p>
+          </div>
+
+          {/* Action CTAs */}
+          {isOwnListing ? (
+            <div className="sidebar-promo-card">
+              <div className="promo-title">Your Listing</div>
+              <div className="promo-text">You are the seller of this item.</div>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 12 }}>
               <button
-                className="action-chat-btn"
+                className="btn-purple-solid"
+                style={{ width: '100%', padding: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
                 onClick={handleChatWithSeller}
                 disabled={startingChat}
               >
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/>
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+                  <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>
                 </svg>
-                {startingChat ? 'Connecting with Seller...' : 'Chat with Seller Now'}
+                {startingChat ? 'Connecting...' : 'Chat with Seller'}
               </button>
-            )}
 
-            {error && <div className="error-banner">{error}</div>}
-          </div>
+              <button className="btn-purple-ghost" style={{ width: '100%', padding: 12 }}>
+                Make an Offer
+              </button>
+            </div>
+          )}
+
+          {/* Leave Verified Buyer Review Form */}
+          {user && !isOwnListing && (
+            <div style={{ background: '#ffffff', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-lg)', padding: 16, marginTop: 8 }}>
+              <h4 style={{ fontFamily: 'var(--font-heading)', fontSize: 14, fontWeight: 700, marginBottom: 8 }}>
+                Leave a Verified Buyer Review
+              </h4>
+              <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>
+                (Allowed if you started a chat thread with the seller for this item)
+              </p>
+
+              {reviewMsg && <div className="error-banner" style={{ fontSize: 12, padding: 8 }}>{reviewMsg}</div>}
+
+              <form onSubmit={handleReviewSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <label style={{ fontSize: 12, fontWeight: 600 }}>Rating:</label>
+                  <select value={rating} onChange={(e) => setRating(Number(e.target.value))} style={{ padding: '4px 8px', borderRadius: 4 }}>
+                    <option value="5">5 ★★★★★ (Excellent)</option>
+                    <option value="4">4 ★★★★☆ (Good)</option>
+                    <option value="3">3 ★★★☆☆ (Average)</option>
+                    <option value="2">2 ★★☆☆☆ (Poor)</option>
+                    <option value="1">1 ★☆☆☆☆ (Terrible)</option>
+                  </select>
+                </div>
+                <textarea
+                  required
+                  placeholder="Write a brief review of your transaction..."
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  style={{ width: '100%', height: 60, padding: 8, borderRadius: 6, border: '1px solid var(--border)', fontSize: 12 }}
+                />
+                <button className="btn-purple-solid" style={{ width: 'fit-content', padding: '6px 14px', fontSize: 12 }}>
+                  Submit Review
+                </button>
+              </form>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Similar Items Carousel Grid */}
+      {similarItems.length > 0 && (
+        <div style={{ marginTop: 48 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: 18, fontWeight: 800 }}>Similar Items</h3>
+            <Link to="/" style={{ color: 'var(--primary)', fontWeight: 700, fontSize: 13 }}>View all</Link>
+          </div>
+
+          <div className="products-grid-saas">
+            {similarItems.map((item) => (
+              <ProductCard key={item._id} product={item} />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

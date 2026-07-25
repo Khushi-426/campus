@@ -3,22 +3,8 @@ import Conversation from '../models/Conversation.js';
 import Message from '../models/Message.js';
 import User from '../models/User.js';
 
-/**
- * Why Socket.io instead of polling the REST API every few seconds:
- * polling means every open chat window fires a request on a timer whether
- * or not there's anything new, which wastes requests and adds up to
- * seconds of avoidable latency per message. A persistent WebSocket lets
- * the server push a message the instant it's written, so buyer <-> seller
- * latency is bounded by DB write time (~ms) instead of the poll interval.
- *
- * Scaling note: this single in-process `io` instance works for one server.
- * To run multiple instances behind a load balancer, plug in
- * `@socket.io/redis-adapter` so a message emitted on instance A also
- * reaches a socket connected to instance B (rooms are then backed by
- * Redis pub/sub instead of local memory).
- */
 export default function initSocket(io) {
-  // Authenticate the socket handshake using the same JWT as the REST API.
+  // Authenticate socket handshake using JWT
   io.use(async (socket, next) => {
     try {
       const token = socket.handshake.auth?.token;
@@ -38,7 +24,11 @@ export default function initSocket(io) {
   io.on('connection', (socket) => {
     console.log(`Socket connected: ${socket.user.name} (${socket.id})`);
 
-    // Client joins the room for each conversation it wants live updates for.
+    // Join personal user room for direct notifications and unread badges
+    const userRoom = `user:${socket.user._id.toString()}`;
+    socket.join(userRoom);
+
+    // Join specific chat room
     socket.on('join_conversation', (conversationId) => {
       socket.join(`conversation:${conversationId}`);
     });
@@ -47,7 +37,7 @@ export default function initSocket(io) {
       socket.leave(`conversation:${conversationId}`);
     });
 
-    // Buyer or seller sends a chat message.
+    // Send chat message
     socket.on('send_message', async ({ conversationId, text }, ack) => {
       try {
         if (!text || !text.trim()) return ack?.({ error: 'Message cannot be empty' });
@@ -55,10 +45,11 @@ export default function initSocket(io) {
         const conversation = await Conversation.findById(conversationId);
         if (!conversation) return ack?.({ error: 'Conversation not found' });
 
-        const isParticipant =
-          String(conversation.buyer) === String(socket.user._id) ||
-          String(conversation.seller) === String(socket.user._id);
-        if (!isParticipant) return ack?.({ error: 'Not authorized' });
+        const isBuyer = String(conversation.buyer) === String(socket.user._id);
+        const isSeller = String(conversation.seller) === String(socket.user._id);
+        if (!isBuyer && !isSeller) return ack?.({ error: 'Not authorized' });
+
+        const recipientId = isBuyer ? conversation.seller.toString() : conversation.buyer.toString();
 
         const message = await Message.create({
           conversation: conversationId,
@@ -73,15 +64,24 @@ export default function initSocket(io) {
 
         const populated = await message.populate('sender', 'name');
 
-        // Push to everyone in the room (both tabs of buyer & seller if open).
+        // Broadcast to current conversation room
         io.to(`conversation:${conversationId}`).emit('new_message', populated);
+
+        // Broadcast real-time notification alert to recipient's personal user room
+        io.to(`user:${recipientId}`).emit('chat_notification', {
+          conversationId,
+          senderName: socket.user.name,
+          text: text.trim(),
+        });
+
         ack?.({ success: true, message: populated });
       } catch (err) {
+        console.error('Send message error:', err);
         ack?.({ error: 'Failed to send message' });
       }
     });
 
-    // Lightweight typing indicator - not persisted, just relayed live.
+    // Typing indicator
     socket.on('typing', ({ conversationId }) => {
       socket.to(`conversation:${conversationId}`).emit('typing', {
         userId: socket.user._id,

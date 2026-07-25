@@ -1,28 +1,26 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { useLocation } from 'react-router-dom';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { useLocation, Link } from 'react-router-dom';
 import api from '../api/axios';
 import ProductCard from '../components/ProductCard';
 
 const CATEGORIES = [
-  { id: 'book', label: 'Textbooks & Books', icon: '📚', desc: 'Engineering, CS & Science' },
-  { id: 'calculator', label: 'Calculators', icon: '🔢', desc: 'Casio & TI Scientific' },
-  { id: 'lab-equipment', label: 'Lab Gear', icon: '🧪', desc: 'Multimeters, Kits & Flasks' },
-  { id: 'stationery', label: 'Stationery', icon: '📐', desc: 'Graph pads & Drafters' },
-  { id: 'electronics', label: 'Electronics', icon: '💻', desc: 'Mice, Hubs & Adapters' },
-  { id: 'other', label: 'Campus Items', icon: '🎒', desc: 'Lab Coats & Posters' },
+  { id: 'book', label: 'Books', icon: '📚', count: '1.2k+', bgClass: 'bg-orange' },
+  { id: 'electronics', label: 'Electronics', icon: '💻', count: '850+', bgClass: 'bg-green' },
+  { id: 'lab-equipment', label: 'Lab Equipment', icon: '🧪', count: '420+', bgClass: 'bg-blue' },
+  { id: 'stationery', label: 'Stationery', icon: '📁', count: '650+', bgClass: 'bg-amber' },
+  { id: 'other', label: 'Others', icon: '⚙️', count: '1k+', bgClass: 'bg-purple' },
 ];
 
-function SkeletonListings() {
+function SkeletonGrid() {
   return (
-    <div className="products-grid">
+    <div className="products-grid-saas">
       {Array.from({ length: 8 }).map((_, i) => (
-        <div className="product-card" key={i}>
+        <div className="card-saas" key={i}>
           <div className="skeleton-pulse" style={{ width: '100%', aspectRatio: '4/3' }} />
-          <div className="card-details">
-            <div className="skeleton-pulse" style={{ width: '35%', height: 12 }} />
+          <div className="card-saas-body">
             <div className="skeleton-pulse" style={{ width: '85%', height: 16 }} />
-            <div className="skeleton-pulse" style={{ width: '50%', height: 12 }} />
-            <div className="skeleton-pulse" style={{ width: '40%', height: 20, marginTop: 'auto' }} />
+            <div className="skeleton-pulse" style={{ width: '40%', height: 18, marginTop: 8 }} />
+            <div className="skeleton-pulse" style={{ width: '60%', height: 12, marginTop: 'auto' }} />
           </div>
         </div>
       ))}
@@ -35,18 +33,31 @@ export default function Home() {
 
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState('');
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [totalItems, setTotalItems] = useState(0);
 
   const queryParams = new URLSearchParams(routerLocation.search);
   const searchFromUrl = queryParams.get('search') || '';
   const categoryFromUrl = queryParams.get('category') || '';
 
   const [search, setSearch] = useState(searchFromUrl);
+  const [debouncedSearch, setDebouncedSearch] = useState(searchFromUrl);
   const [category, setCategory] = useState(categoryFromUrl);
-  const [maxPrice, setMaxPrice] = useState('');
+
+  const debounceTimer = useRef(null);
+
+  // 300ms Debounce Handler for Search Bar Input (Prevents firing 10 API requests for a 10-char keystroke)
+  useEffect(() => {
+    clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 300);
+
+    return () => clearTimeout(debounceTimer.current);
+  }, [search]);
 
   useEffect(() => {
     setSearch(searchFromUrl);
@@ -54,147 +65,172 @@ export default function Home() {
     setPage(1);
   }, [searchFromUrl, categoryFromUrl]);
 
-  const fetchProducts = useCallback(async () => {
-    setLoading(true);
+  const fetchProducts = useCallback(async (isLoadMore = false) => {
+    if (isLoadMore) {
+      setLoadingMore(true);
+    } else {
+      setLoading(true);
+    }
     setError('');
+
     try {
-      const params = { page, limit: 12 };
-      if (search) params.search = search;
+      const params = { page: isLoadMore ? page : 1, limit: 12 };
+      if (debouncedSearch) params.search = debouncedSearch;
       if (category) params.category = category;
-      if (maxPrice) params.maxPrice = maxPrice;
 
       const { data } = await api.get('/products', { params });
-      setItems(data.items);
+
+      if (isLoadMore) {
+        setItems((prev) => [...prev, ...data.items]);
+      } else {
+        setItems(data.items);
+      }
       setTotalPages(data.totalPages || 1);
-      setTotalItems(data.total || 0);
     } catch (err) {
-      setError('Could not load listings. Please make sure backend is running.');
+      setError('Could not load listings from server.');
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
-  }, [page, search, category, maxPrice]);
+  }, [page, debouncedSearch, category]);
 
   useEffect(() => {
-    fetchProducts();
-  }, [fetchProducts]);
+    fetchProducts(page > 1);
+  }, [page, debouncedSearch, category, fetchProducts]);
 
-  const clearAllFilters = () => {
-    setSearch('');
-    setCategory('');
-    setMaxPrice('');
-    setPage(1);
+  const loadMoreItems = () => {
+    if (page < totalPages && !loadingMore) {
+      setPage((prev) => prev + 1);
+    }
   };
 
   return (
     <div>
-      {/* Hero Banner (Amazon / Flipkart Promotional Hero) */}
-      <section className="hero-banner">
-        <div className="container hero-content">
-          <div className="hero-text">
-            <h1>Campus <span>Semester Resale</span> Marketplace</h1>
-            <p>Save up to 75% on second-hand engineering textbooks, scientific calculators, and lab gear passed down by seniors.</p>
-            <div className="hero-stats-row">
-              <div className="stat-chip">
-                <span>📚 500+ Verified Books</span>
-              </div>
-              <div className="stat-chip">
-                <span>⚡ Instant Campus Chat</span>
-              </div>
-              <div className="stat-chip">
-                <span>📍 Library Pickup</span>
-              </div>
-            </div>
+      {/* Hero Banner Card */}
+      <section className="hero-card-saas">
+        <div className="hero-card-left">
+          <h1>Buy. Sell. Donate.<br />Request. Repeat.</h1>
+          <p>The trusted campus marketplace for students, by students.</p>
+          <div className="hero-card-btns">
+            <Link to="/?category=" className="btn-purple-solid">Browse Items</Link>
+            <Link to="/sell" className="btn-purple-ghost">Post an Item</Link>
           </div>
+        </div>
+
+        {/* Vector SVG Illustration */}
+        <div className="hero-vector-illustration">
+          <svg viewBox="0 0 200 160" width="220" height="150">
+            <circle cx="100" cy="80" r="70" fill="#c7d2fe" opacity="0.4"/>
+            <path d="M65 130c0-20 15-35 35-35s35 15 35 35" fill="#4f46e5"/>
+            <circle cx="100" cy="70" r="22" fill="#312e81"/>
+            <path d="M125 135c0-15 12-28 28-28s28 13 28 28" fill="#818cf8"/>
+            <circle cx="153" cy="85" r="18" fill="#4338ca"/>
+          </svg>
         </div>
       </section>
 
-      <div className="container" style={{ paddingBottom: 64 }}>
-        {/* Category Shortcut Tiles */}
-        <div className="category-tiles-grid">
+      {/* Category Row */}
+      <div className="category-row-grid">
+        <div
+          className={`cat-card-saas ${category === '' ? 'active' : ''}`}
+          onClick={() => { setCategory(''); setPage(1); }}
+        >
+          <div className="cat-card-icon-box bg-purple">🛍️</div>
+          <div className="cat-card-title">All Items</div>
+          <div className="cat-card-count">Catalog</div>
+        </div>
+
+        {CATEGORIES.map((cat) => (
           <div
-            className={`category-tile ${category === '' ? 'active' : ''}`}
-            onClick={() => { setCategory(''); setPage(1); }}
+            key={cat.id}
+            className={`cat-card-saas ${category === cat.id ? 'active' : ''}`}
+            onClick={() => { setCategory(cat.id); setPage(1); }}
           >
-            <div className="category-icon-wrapper">🛍️</div>
-            <div className="category-tile-title">All Items</div>
-            <div className="category-tile-subtitle">Explore Catalog</div>
+            <div className={`cat-card-icon-box ${cat.bgClass}`}>{cat.icon}</div>
+            <div className="cat-card-title">{cat.label}</div>
+            <div className="cat-card-count">{cat.count}</div>
           </div>
-          {CATEGORIES.map((cat) => (
-            <div
-              key={cat.id}
-              className={`category-tile ${category === cat.id ? 'active' : ''}`}
-              onClick={() => { setCategory(cat.id); setPage(1); }}
-            >
-              <div className="category-icon-wrapper">{cat.icon}</div>
-              <div className="category-tile-title">{cat.label}</div>
-              <div className="category-tile-subtitle">{cat.desc}</div>
-            </div>
-          ))}
+        ))}
+      </div>
+
+      {/* Section Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+        <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: 20, color: 'var(--text-main)', fontWeight: 800 }}>
+          {category ? `${category.toUpperCase()} Listings` : debouncedSearch ? `Results for "${debouncedSearch}"` : 'Featured Listings'}
+        </h2>
+        <Link to="/" style={{ color: 'var(--primary)', fontWeight: 700, fontSize: 13 }}>View all</Link>
+      </div>
+
+      {error && <div className="error-banner">{error}</div>}
+
+      {loading && page === 1 ? (
+        <SkeletonGrid />
+      ) : items.length === 0 ? (
+        <div className="card-saas" style={{ padding: '60px 20px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <div style={{ fontSize: 48, marginBottom: 12 }}>🔍</div>
+          <h3 style={{ fontFamily: 'var(--font-heading)', fontSize: 18 }}>No listings found</h3>
+          <p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 4 }}>Try clearing search filters or changing category.</p>
+          <button className="btn-purple-solid" style={{ marginTop: 16 }} onClick={() => { setCategory(''); setSearch(''); }}>
+            Reset Filters
+          </button>
         </div>
-
-        {/* Filter Summary & Result Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
-          <div>
-            <h2 style={{ fontFamily: 'var(--font-heading)', fontSize: 22, color: 'var(--navy-900)' }}>
-              {category ? `${category.toUpperCase()} Listings` : search ? `Search Results for "${search}"` : 'Recommended Campus Listings'}
-            </h2>
-            <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>
-              Showing {items.length} of {totalItems} verified items for sale
-            </p>
-          </div>
-
-          {(search || category || maxPrice) && (
-            <button className="btn-sell-now" style={{ background: '#e2e8f0', color: '#334155' }} onClick={clearAllFilters}>
-              Clear Filters ✕
-            </button>
-          )}
-        </div>
-
-        {error && <div className="error-banner">{error}</div>}
-
-        {loading ? (
-          <SkeletonListings />
-        ) : items.length === 0 ? (
-          <div className="svg-fallback-box" style={{ background: '#fff', border: '1px solid var(--border-light)', borderRadius: 'var(--radius-md)', padding: '60px 20px' }}>
-            <svg viewBox="0 0 24 24" width="64" height="64">
-              <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
-            </svg>
-            <h3 style={{ fontFamily: 'var(--font-heading)', marginTop: 12 }}>No listings found</h3>
-            <p style={{ color: 'var(--text-muted)' }}>Try selecting a different category or clearing your search term.</p>
-            <button className="btn-sell-now" style={{ marginTop: 16 }} onClick={clearAllFilters}>Reset Filters</button>
-          </div>
-        ) : (
-          <div className="products-grid">
+      ) : (
+        <>
+          <div className="products-grid-saas">
             {items.map((p) => (
               <ProductCard key={p._id} product={p} />
             ))}
           </div>
-        )}
 
-        {/* Pagination Bar */}
-        {!loading && totalPages > 1 && (
-          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 12, marginTop: 40 }}>
-            <button
-              className="action-chat-btn"
-              style={{ width: 'auto', padding: '8px 16px', fontSize: 14, background: 'var(--navy-800)', color: '#fff' }}
-              disabled={page <= 1}
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-            >
-              ← Previous
-            </button>
-            <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--navy-900)' }}>
-              Page {page} of {totalPages}
-            </span>
-            <button
-              className="action-chat-btn"
-              style={{ width: 'auto', padding: '8px 16px', fontSize: 14, background: 'var(--navy-800)', color: '#fff' }}
-              disabled={page >= totalPages}
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            >
-              Next →
-            </button>
+          {/* Infinite Scroll / Load More Button */}
+          {page < totalPages && (
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: 36 }}>
+              <button
+                className="btn-purple-ghost"
+                onClick={loadMoreItems}
+                disabled={loadingMore}
+                style={{ padding: '12px 32px', fontSize: 14 }}
+              >
+                {loadingMore ? 'Loading More Gear...' : 'Load More Listings ↓'}
+              </button>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Footer Features Banner */}
+      <div className="footer-features-banner">
+        <div className="feature-item-pill">
+          <div className="feature-icon-circle">🛡️</div>
+          <div>
+            <div className="feature-title">Secure & Trusted</div>
+            <div className="feature-sub">Verified students only</div>
           </div>
-        )}
+        </div>
+
+        <div className="feature-item-pill">
+          <div className="feature-icon-circle">🔔</div>
+          <div>
+            <div className="feature-title">Smart Notifications</div>
+            <div className="feature-sub">Never miss an update</div>
+          </div>
+        </div>
+
+        <div className="feature-item-pill">
+          <div className="feature-icon-circle">💬</div>
+          <div>
+            <div className="feature-title">Real-time Chat</div>
+            <div className="feature-sub">Connect instantly</div>
+          </div>
+        </div>
+
+        <div className="feature-item-pill">
+          <div className="feature-icon-circle">⚡</div>
+          <div>
+            <div className="feature-title">Easy & Fast</div>
+            <div className="feature-sub">Seamless experience</div>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -28,10 +28,14 @@ export default function Register() {
   };
 
   return (
-    <div className="container page">
-      <div className="form-card">
-        <h1 className="page-title" style={{ fontSize: 28, textAlign: 'center' }}>Join CampusTrade</h1>
-        <p className="page-sub" style={{ textAlign: 'center' }}>Connect with campus seniors and juniors for textbook & gear resale.</p>
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
+      <div className="form-card" style={{ width: '100%', maxWidth: 520 }}>
+        <h1 style={{ fontFamily: 'var(--font-heading)', fontSize: 26, fontWeight: 800, textAlign: 'center', color: 'var(--text-main)', marginBottom: 6 }}>
+          Join CampusTrade
+        </h1>
+        <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 14, marginBottom: 24 }}>
+          Connect with campus seniors and juniors for textbook & gear resale.
+        </p>
 
         {error && <div className="error-banner">{error}</div>}
 
@@ -104,13 +108,13 @@ export default function Register() {
             />
           </div>
 
-          <button className="btn btn-navy btn-block" style={{ marginTop: 12, fontSize: 16 }} disabled={loading}>
+          <button className="btn-primary" style={{ marginTop: 8 }} disabled={loading}>
             {loading ? 'Creating Account...' : 'Create Account'}
           </button>
         </form>
 
         <p className="helper-text">
-          Already have an account? <Link to="/login" style={{ fontWeight: 600, color: 'var(--navy)' }}>Log in</Link>
+          Already have an account? <Link to="/login" style={{ fontWeight: 700, color: 'var(--primary)' }}>Log in</Link>
         </p>
       </div>
     </div>
