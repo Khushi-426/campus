@@ -58,6 +58,15 @@ provider changes only `MONGO_URI`; configure that provider's network/IP
 allowlist for your development machine or deployment host. The application code
 and data models do not change.
 
+Note: the backend will respect a `CLIENT_URL` environment variable which is
+used for CORS and Socket.io origin configuration (defaults to `http://localhost:3000`).
+
+The server exposes a lightweight health check at `GET /api/health` and serves
+uploaded product images from `/uploads` (static files served from the
+`uploads/` directory). When running the frontend locally, set `REACT_APP_API_URL`
+and `REACT_APP_SOCKET_URL` in `frontend/.env` if the backend is hosted on a
+non-default host/port.
+
 ### 2. Frontend
 
 ```bash
