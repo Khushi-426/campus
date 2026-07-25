@@ -1,10 +1,10 @@
-const Conversation = require('../models/Conversation');
-const Message = require('../models/Message');
-const Product = require('../models/Product');
+import Conversation from '../models/Conversation.js';
+import Message from '../models/Message.js';
+import Product from '../models/Product.js';
 
 // POST /api/chat/start  { productId }
 // Buyer clicks "Chat with seller" -> find or create the thread.
-exports.startConversation = async (req, res) => {
+export const startConversation = async (req, res) => {
   try {
     const { productId } = req.body;
     const product = await Product.findById(productId);
@@ -37,7 +37,7 @@ exports.startConversation = async (req, res) => {
 };
 
 // GET /api/chat  -> all conversations for the logged-in user (as buyer or seller)
-exports.getConversations = async (req, res) => {
+export const getConversations = async (req, res) => {
   try {
     const conversations = await Conversation.find({
       $or: [{ buyer: req.user._id }, { seller: req.user._id }],
@@ -56,7 +56,7 @@ exports.getConversations = async (req, res) => {
 
 // GET /api/chat/:conversationId/messages?before=<timestamp>&limit=30
 // Cursor-based pagination (by createdAt) - scales better than page/skip for chat history.
-exports.getMessages = async (req, res) => {
+export const getMessages = async (req, res) => {
   try {
     const { conversationId } = req.params;
     const { before, limit = 30 } = req.query;

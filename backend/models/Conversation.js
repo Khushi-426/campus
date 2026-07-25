@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const conversationSchema = new mongoose.Schema(
   {
@@ -18,4 +18,4 @@ conversationSchema.index({ product: 1, buyer: 1 }, { unique: true });
 conversationSchema.index({ buyer: 1, lastMessageAt: -1 });
 conversationSchema.index({ seller: 1, lastMessageAt: -1 });
 
-module.exports = mongoose.model('Conversation', conversationSchema);
+export default mongoose.model('Conversation', conversationSchema);

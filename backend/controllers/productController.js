@@ -1,8 +1,8 @@
-const Product = require('../models/Product');
-const cache = require('../utils/cache');
+import Product from '../models/Product.js';
+import cache from '../utils/cache.js';
 
 // GET /api/products?category=book&search=calculus&minPrice=0&maxPrice=500&page=1&limit=12
-exports.getProducts = async (req, res) => {
+export const getProducts = async (req, res) => {
   try {
     const {
       category,
@@ -61,7 +61,7 @@ exports.getProducts = async (req, res) => {
   }
 };
 
-exports.getProductById = async (req, res) => {
+export const getProductById = async (req, res) => {
   try {
     const product = await Product.findByIdAndUpdate(
       req.params.id,
@@ -77,7 +77,7 @@ exports.getProductById = async (req, res) => {
   }
 };
 
-exports.createProduct = async (req, res) => {
+export const createProduct = async (req, res) => {
   try {
     const { title, description, category, price, condition, images } = req.body;
     if (!title || !description || !category || price === undefined) {
@@ -102,7 +102,7 @@ exports.createProduct = async (req, res) => {
   }
 };
 
-exports.updateProduct = async (req, res) => {
+export const updateProduct = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
     if (!product) return res.status(404).json({ message: 'Product not found' });
@@ -124,7 +124,7 @@ exports.updateProduct = async (req, res) => {
   }
 };
 
-exports.deleteProduct = async (req, res) => {
+export const deleteProduct = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
     if (!product) return res.status(404).json({ message: 'Product not found' });
@@ -141,7 +141,7 @@ exports.deleteProduct = async (req, res) => {
   }
 };
 
-exports.getMyListings = async (req, res) => {
+export const getMyListings = async (req, res) => {
   try {
     const products = await Product.find({ seller: req.user._id }).sort({ createdAt: -1 });
     res.json({ items: products });

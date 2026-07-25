@@ -1,10 +1,13 @@
-require('dotenv').config();
-const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
-const User = require('../models/User');
-const Product = require('../models/Product');
-const Conversation = require('../models/Conversation');
-const Message = require('../models/Message');
+import 'dotenv/config';
+import dns from 'dns';
+import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
+import User from '../models/User.js';
+import Product from '../models/Product.js';
+import Conversation from '../models/Conversation.js';
+import Message from '../models/Message.js';
+
+dns.setServers(['8.8.8.8', '1.1.1.1']);
 
 const categories = ['book', 'calculator', 'lab-equipment', 'stationery', 'electronics', 'other'];
 const conditions = ['new', 'like-new', 'good', 'fair', 'worn'];

@@ -40,4 +40,4 @@ class TTLCache {
   }
 }
 
-module.exports = new TTLCache();
+export default new TTLCache();

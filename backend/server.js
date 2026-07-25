@@ -1,16 +1,16 @@
-require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
-const http = require('http');
-const { Server } = require('socket.io');
+import 'dotenv/config';
+import express from 'express';
+import cors from 'cors';
+import http from 'http';
+import { Server } from 'socket.io';
 
-const connectDB = require('./config/db');
-const initSocket = require('./socket');
-const { apiLimiter } = require('./middleware/rateLimit');
+import connectDB from './config/db.js';
+import initSocket from './socket/index.js';
+import { apiLimiter } from './middleware/rateLimit.js';
 
-const authRoutes = require('./routes/authRoutes');
-const productRoutes = require('./routes/productRoutes');
-const chatRoutes = require('./routes/chatRoutes');
+import authRoutes from './routes/authRoutes.js';
+import productRoutes from './routes/productRoutes.js';
+import chatRoutes from './routes/chatRoutes.js';
 
 connectDB();
 

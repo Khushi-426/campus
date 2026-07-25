@@ -1,7 +1,7 @@
-const jwt = require('jsonwebtoken');
-const Conversation = require('../models/Conversation');
-const Message = require('../models/Message');
-const User = require('../models/User');
+import jwt from 'jsonwebtoken';
+import Conversation from '../models/Conversation.js';
+import Message from '../models/Message.js';
+import User from '../models/User.js';
 
 /**
  * Why Socket.io instead of polling the REST API every few seconds:
@@ -17,7 +17,7 @@ const User = require('../models/User');
  * reaches a socket connected to instance B (rooms are then backed by
  * Redis pub/sub instead of local memory).
  */
-function initSocket(io) {
+export default function initSocket(io) {
   // Authenticate the socket handshake using the same JWT as the REST API.
   io.use(async (socket, next) => {
     try {
@@ -94,5 +94,3 @@ function initSocket(io) {
     });
   });
 }
-
-module.exports = initSocket;

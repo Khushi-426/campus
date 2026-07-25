@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const productSchema = new mongoose.Schema(
   {
@@ -40,4 +40,4 @@ productSchema.index({ status: 1, createdAt: -1 });
 // a separate search service like Elasticsearch for a project this size.
 productSchema.index({ title: 'text', description: 'text' });
 
-module.exports = mongoose.model('Product', productSchema);
+export default mongoose.model('Product', productSchema);
