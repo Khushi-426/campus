@@ -21,10 +21,16 @@ export default function ChatWindow({ conversation }) {
     const socket = getSocket();
 
     setLoading(true);
-    api.get(`/chat/${conversation._id}/messages`).then(({ data }) => {
-      setMessages(data.items);
-      setLoading(false);
-    });
+    api.get(`/chat/${conversation._id}/messages`)
+      .then(({ data }) => {
+        setMessages(data.items);
+      })
+      .catch((err) => {
+        console.error('Failed to fetch messages:', err);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
 
     socket.emit('join_conversation', conversation._id);
 
