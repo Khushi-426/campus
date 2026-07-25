@@ -13,9 +13,9 @@ export default function ChatWindow({ conversation }) {
   const typingTimeout = useRef(null);
 
   const otherPerson =
-    conversation && (String(conversation.buyer._id) === String(user.id) ? conversation.seller : conversation.buyer);
+    conversation && (String(conversation.buyer?._id) === String(user.id) ? conversation.seller : conversation.buyer);
 
-  // Load message history, then join the socket room for live updates.
+  // Load message history, then join socket room for real-time delivery
   useEffect(() => {
     if (!conversation) return;
     const socket = getSocket();
@@ -37,7 +37,7 @@ export default function ChatWindow({ conversation }) {
       if (String(userId) !== String(user.id)) {
         setTypingUser(name);
         clearTimeout(typingTimeout.current);
-        typingTimeout.current = setTimeout(() => setTypingUser(null), 2000);
+        typingTimeout.current = setTimeout(() => setTypingUser(null), 2500);
       }
     };
 
@@ -71,43 +71,74 @@ export default function ChatWindow({ conversation }) {
   };
 
   if (!conversation) {
-    return <div className="chat-window"><div className="empty-state">Pick a conversation to start chatting</div></div>;
+    return (
+      <div className="chat-window">
+        <div className="empty-state">
+          <svg viewBox="0 0 24 24">
+            <path d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/>
+          </svg>
+          <h3 style={{ margin: '0 0 8px', color: 'var(--navy)' }}>No conversation selected</h3>
+          <p className="page-sub" style={{ fontSize: 14 }}>Select a thread from the list on the left to start messaging.</p>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="chat-window">
       <div className="chat-header">
-        <strong>{otherPerson?.name}</strong>
-        <div className="card-meta">re: {conversation.product?.title}</div>
+        <div>
+          <strong style={{ fontSize: 16, color: 'var(--navy)' }}>{otherPerson?.name || 'User'}</strong>
+          <div className="card-meta" style={{ marginTop: 2 }}>
+            Re: {conversation.product?.title || 'Listing'}
+          </div>
+        </div>
+        {conversation.product?.price !== undefined && (
+          <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--rust)', fontSize: 16 }}>
+            {conversation.product.price === 0 ? 'FREE' : `₹${conversation.product.price}`}
+          </div>
+        )}
       </div>
 
       <div className="chat-messages">
-        {loading && <p className="helper-text">Loading messages…</p>}
-        {!loading && messages.length === 0 && (
-          <p className="helper-text">No messages yet — say hello to {otherPerson?.name}.</p>
+        {loading ? (
+          <p className="helper-text">Loading chat history...</p>
+        ) : messages.length === 0 ? (
+          <div className="helper-text" style={{ padding: 20 }}>
+            No messages yet. Send a message to inspect the item or agree on a campus meeting place.
+          </div>
+        ) : (
+          messages.map((m) => {
+            const mine = String(m.sender._id || m.sender) === String(user.id);
+            return (
+              <div key={m._id} className={`msg-bubble ${mine ? 'msg-mine' : 'msg-theirs'}`}>
+                {m.text}
+                <div className="msg-time">
+                  {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </div>
+              </div>
+            );
+          })
         )}
-        {messages.map((m) => {
-          const mine = String(m.sender._id || m.sender) === String(user.id);
-          return (
-            <div key={m._id} className={`msg-bubble ${mine ? 'msg-mine' : 'msg-theirs'}`}>
-              {m.text}
-              <div className="msg-time">{new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
-            </div>
-          );
-        })}
         <div ref={bottomRef} />
       </div>
 
-      {typingUser && <div className="typing-indicator">{typingUser} is typing…</div>}
+      {typingUser && (
+        <div className="typing-indicator">
+          💬 {typingUser} is typing...
+        </div>
+      )}
 
       <form className="chat-input-bar" onSubmit={sendMessage}>
         <input
           type="text"
-          placeholder="Type a message…"
+          placeholder="Type your message..."
           value={text}
           onChange={handleTypingInput}
         />
-        <button type="submit" className="btn btn-navy">Send</button>
+        <button type="submit" className="btn btn-navy" disabled={!text.trim()}>
+          Send
+        </button>
       </form>
     </div>
   );

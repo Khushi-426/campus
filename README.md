@@ -82,6 +82,17 @@ by default (override with `REACT_APP_API_URL` / `REACT_APP_SOCKET_URL` in a
   - Typing indicator
   - One conversation thread per (product, buyer) pair
 
+## System design benchmarks & empirical measurements
+
+All 7 system design claims below are benchmarked against a **10,000 document database** with automated test scripts in `backend/scripts/bench/`. View [BENCHMARKS.md](BENCHMARKS.md) for full empirical metrics, executionStats, latency numbers, and resume bullet points.
+
+```bash
+# Run full benchmark suite
+cd backend
+node scripts/seed.js --bench
+node scripts/bench/run_all_benchmarks.js
+```
+
 ## System design concepts you can talk about in an interview
 
 This is the part worth putting on a resume — each choice below was made
@@ -118,9 +129,9 @@ deliberately, not just "because MERN tutorials do it this way":
    pub/sub, since Socket.io rooms are in-memory per process by default).
 
 5. **Connection pooling.** `config/db.js` sets `maxPoolSize`/`minPoolSize`
-   explicitly rather than relying on Mongoose defaults — a concrete,
-   explainable choice about how many concurrent DB connections one server
-   process holds open, instead of opening a new one per request.
+   explicitly (`maxPoolSize: 10, minPoolSize: 2`) rather than relying on Mongoose
+   defaults — a concrete, explainable choice about how many concurrent DB
+   connections one server process holds open, instead of opening a new one per request.
 
 6. **Rate limiting.** Auth endpoints get a strict limiter (brute-force
    protection); all API routes get a looser global limiter (basic DoS /
@@ -134,7 +145,7 @@ deliberately, not just "because MERN tutorials do it this way":
 
 ## Natural "next steps" to mention if asked how you'd scale this further
 
-- Move image storage off base64-in-Mongo to S3/Cloudinary + a CDN.
+- **S3/Cloudinary Image Bucket Integration**: To move image storage off base64/static URLs to AWS S3 or Cloudinary, replace the `images` array in `SellItem.jsx` and `productController.js` with an S3 pre-signed upload URL flow (`multer-s3` or AWS SDK v3 `@aws-sdk/client-s3`), storing returned CloudFront/S3 URLs in MongoDB.
 - Move the in-memory cache to Redis; add `@socket.io/redis-adapter` for
   multi-instance chat.
 - Add a message queue (e.g. for "notify seller" emails) so the request

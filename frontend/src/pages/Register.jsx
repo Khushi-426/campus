@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
+const BRANCHES = ['Computer Science', 'Electronics', 'Mechanical', 'Civil', 'Electrical', 'Chemical', 'Other'];
+
 export default function Register() {
   const { register } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ name: '', email: '', password: '', year: '', branch: '', phone: '' });
+  const [form, setForm] = useState({ name: '', email: '', password: '', year: '1', branch: 'Computer Science', phone: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -16,10 +18,10 @@ export default function Register() {
     setError('');
     setLoading(true);
     try {
-      await register(form);
+      await register({ ...form, year: Number(form.year) });
       navigate('/');
     } catch (err) {
-      setError(err.response?.data?.message || 'Registration failed');
+      setError(err.response?.data?.message || 'Registration failed. Please check form details.');
     } finally {
       setLoading(false);
     }
@@ -28,39 +30,87 @@ export default function Register() {
   return (
     <div className="container page">
       <div className="form-card">
-        <h1 className="page-title" style={{ fontSize: 24, textAlign: 'center' }}>Create an account</h1>
+        <h1 className="page-title" style={{ fontSize: 28, textAlign: 'center' }}>Join CampusTrade</h1>
+        <p className="page-sub" style={{ textAlign: 'center' }}>Connect with campus seniors and juniors for textbook & gear resale.</p>
+
+        {error && <div className="error-banner">{error}</div>}
+
         <form onSubmit={handleSubmit}>
           <div className="field">
-            <label>Full name</label>
-            <input name="name" required value={form.name} onChange={handleChange} />
+            <label>Full Name</label>
+            <input
+              name="name"
+              required
+              placeholder="e.g. Aarav Sharma"
+              value={form.name}
+              onChange={handleChange}
+            />
           </div>
+
           <div className="field">
-            <label>College email</label>
-            <input name="email" type="email" required value={form.email} onChange={handleChange} />
+            <label>College Email</label>
+            <input
+              name="email"
+              type="email"
+              required
+              placeholder="aarav@college.edu"
+              value={form.email}
+              onChange={handleChange}
+            />
           </div>
+
           <div className="field">
-            <label>Password</label>
-            <input name="password" type="password" required minLength={6} value={form.password} onChange={handleChange} />
+            <label>Password (Min. 6 characters)</label>
+            <input
+              name="password"
+              type="password"
+              required
+              minLength={6}
+              placeholder="••••••••"
+              value={form.password}
+              onChange={handleChange}
+            />
           </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <div className="field">
+              <label>Year of Study</label>
+              <select name="year" value={form.year} onChange={handleChange}>
+                <option value="1">1st Year</option>
+                <option value="2">2nd Year</option>
+                <option value="3">3rd Year</option>
+                <option value="4">4th Year</option>
+                <option value="5">5th Year / M.Tech</option>
+              </select>
+            </div>
+
+            <div className="field">
+              <label>Branch / Department</label>
+              <select name="branch" value={form.branch} onChange={handleChange}>
+                {BRANCHES.map((b) => (
+                  <option key={b} value={b}>{b}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
           <div className="field">
-            <label>Year</label>
-            <input name="year" type="number" min={1} max={5} value={form.year} onChange={handleChange} />
+            <label>Phone Number (Optional)</label>
+            <input
+              name="phone"
+              placeholder="+91 98765 43210"
+              value={form.phone}
+              onChange={handleChange}
+            />
           </div>
-          <div className="field">
-            <label>Branch</label>
-            <input name="branch" value={form.branch} onChange={handleChange} />
-          </div>
-          <div className="field">
-            <label>Phone (optional)</label>
-            <input name="phone" value={form.phone} onChange={handleChange} />
-          </div>
-          {error && <p className="error-text">{error}</p>}
-          <button className="btn btn-navy btn-block" disabled={loading}>
-            {loading ? 'Creating account…' : 'Sign up'}
+
+          <button className="btn btn-navy btn-block" style={{ marginTop: 12, fontSize: 16 }} disabled={loading}>
+            {loading ? 'Creating Account...' : 'Create Account'}
           </button>
         </form>
+
         <p className="helper-text">
-          Already have an account? <Link to="/login">Log in</Link>
+          Already have an account? <Link to="/login" style={{ fontWeight: 600, color: 'var(--navy)' }}>Log in</Link>
         </p>
       </div>
     </div>
