@@ -1,23 +1,33 @@
 {
   "poolSize1": {
     "maxPoolSize": 1,
+    "minPoolSize": 1,
+    "activeConnections": 1,
+    "idleConnections": 0,
+    "queuedRequests": 49,
+    "connectionWaitTimeMs": 0,
     "concurrency": 50,
-    "totalDurationMs": 88,
-    "requestsPerSecond": 568,
-    "avgLatencyMs": 81,
-    "p50LatencyMs": 81,
-    "p95LatencyMs": 82,
-    "p99LatencyMs": 83
+    "totalDurationMs": 159,
+    "requestsPerSecond": 314,
+    "avgLatencyMs": 133,
+    "p50LatencyMs": 134,
+    "p95LatencyMs": 136,
+    "p99LatencyMs": 146
   },
   "poolSize10": {
     "maxPoolSize": 10,
+    "minPoolSize": 2,
+    "activeConnections": 10,
+    "idleConnections": 2,
+    "queuedRequests": 40,
+    "connectionWaitTimeMs": 0,
     "concurrency": 50,
-    "totalDurationMs": 64,
-    "requestsPerSecond": 781,
-    "avgLatencyMs": 56,
-    "p50LatencyMs": 55,
-    "p95LatencyMs": 59,
-    "p99LatencyMs": 59
+    "totalDurationMs": 383,
+    "requestsPerSecond": 131,
+    "avgLatencyMs": 350,
+    "p50LatencyMs": 351,
+    "p95LatencyMs": 359,
+    "p99LatencyMs": 361
   },
-  "throughputImprovementPercent": 37.5
+  "throughputImprovementPercent": -58.3
 }

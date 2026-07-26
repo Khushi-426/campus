@@ -1,23 +1,23 @@
 {
-  "coldCache": {
-    "latencyMs": 4,
+  "coldCacheRead": {
+    "latencyMs": 7,
     "cacheHeader": "HIT",
-    "state": "COLD"
+    "state": "COLD (MISS)"
   },
-  "warmCache": {
+  "warmCacheRead": {
     "requests": 100,
     "avgLatencyMs": 1,
     "p50LatencyMs": 1,
-    "p95LatencyMs": 2,
-    "p99LatencyMs": 5,
+    "p95LatencyMs": 3,
+    "p99LatencyMs": 10,
     "cacheHeader": "HIT",
-    "state": "WARM"
+    "state": "WARM (HIT)"
   },
-  "afterInvalidation": {
-    "postWriteLatencyMs": 175,
+  "postInvalidationRead": {
+    "latencyMs": 359,
     "cacheHeader": "MISS",
     "state": "INVALIDATED (MISS)",
     "invalidationVerified": true
   },
-  "latencyReductionPercent": 75
+  "latencyReductionPercent": 85.7
 }

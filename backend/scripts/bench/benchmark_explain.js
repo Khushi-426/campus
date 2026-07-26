@@ -23,53 +23,54 @@ export async function runExplainBenchmark() {
 
   console.log('[EXPLAIN BENCHMARK] Running MongoDB .explain("executionStats")...');
 
-  const sampleProduct = await Product.findOne().lean();
   const sampleConv = await Conversation.findOne().lean();
-
-  // Query 1: Product filtering and sorting
   const productFilter = { status: 'available', category: 'book' };
 
-  // Indexed execution
+  // 1. Indexed Product Query
   const productIndexedExplain = await Product.find(productFilter)
     .sort({ createdAt: -1 })
     .limit(12)
     .explain('executionStats');
 
-  // Forced Unindexed (COLLSCAN using hint({ $natural: 1 }))
+  // 2. Forced Unindexed Product Scan (COLLSCAN via hint({ $natural: 1 }))
   const productUnindexedExplain = await Product.find(productFilter)
     .sort({ createdAt: -1 })
     .limit(12)
     .hint({ $natural: 1 })
     .explain('executionStats');
 
-  // Query 2: Conversation compound index lookup
-  let convIndexedExplain = null;
-  let convUnindexedExplain = null;
-
-  if (sampleConv) {
-    convIndexedExplain = await Conversation.findOne({
-      product: sampleConv.product,
-      buyer: sampleConv.buyer,
-    }).explain('executionStats');
-
-    convUnindexedExplain = await Conversation.findOne({
-      product: sampleConv.product,
-      buyer: sampleConv.buyer,
-    }).hint({ $natural: 1 }).explain('executionStats');
-  }
-
-  const getStats = (explainObj) => {
+  // Helper to extract detailed MongoDB explain stats
+  const extractExplainDetails = (explainObj, isForcedUnindexed = false) => {
     const stats = explainObj.executionStats || {};
-    const winningStage =
-      explainObj.queryPlanner?.winningPlan?.inputStage?.stage ||
-      explainObj.queryPlanner?.winningPlan?.stage ||
-      'UNKNOWN';
+    const planner = explainObj.queryPlanner || {};
+    const winningPlan = planner.winningPlan || {};
+
+    const findStage = (plan) => {
+      if (!plan) return 'UNKNOWN';
+      if (plan.stage === 'COLLSCAN') return 'COLLSCAN';
+      if (plan.stage === 'IXSCAN') return `IXSCAN (${plan.indexName || 'Index'})`;
+      if (plan.inputStage) return `${plan.stage} -> ${findStage(plan.inputStage)}`;
+      return plan.stage || 'UNKNOWN';
+    };
+
+    const extractIndexName = (plan) => {
+      if (!plan) return 'None (Collection Scan)';
+      if (plan.indexName) return plan.indexName;
+      if (plan.inputStage) return extractIndexName(plan.inputStage);
+      return isForcedUnindexed ? 'None (Forced $natural COLLSCAN)' : 'None (Collection Scan)';
+    };
+
+    const rawMs = stats.executionTimeMillis ?? 0;
+    const formattedMs = rawMs === 0 ? '<1 ms (Rounded to 0 ms by MongoDB driver)' : `${rawMs} ms`;
 
     return {
-      executionTimeMillis: stats.executionTimeMillis ?? 0,
+      executionTimeMillis: rawMs,
+      executionTimeFormatted: formattedMs,
       totalDocsExamined: stats.totalDocsExamined ?? 0,
       totalKeysExamined: stats.totalKeysExamined ?? 0,
-      winningPlanStage: winningStage,
+      winningPlanStage: winningPlan.stage || 'UNKNOWN',
+      winningPlanDetails: findStage(winningPlan),
+      indexName: extractIndexName(winningPlan),
       nReturned: stats.nReturned ?? 0,
     };
   };
@@ -77,13 +78,8 @@ export async function runExplainBenchmark() {
   const results = {
     productQuery: {
       description: 'Product.find({ status: "available", category: "book" }).sort({ createdAt: -1 }).limit(12)',
-      indexed: getStats(productIndexedExplain),
-      unindexed: getStats(productUnindexedExplain),
-    },
-    conversationQuery: {
-      description: 'Conversation.findOne({ product, buyer })',
-      indexed: convIndexedExplain ? getStats(convIndexedExplain) : null,
-      unindexed: convUnindexedExplain ? getStats(convUnindexedExplain) : null,
+      indexed: extractExplainDetails(productIndexedExplain, false),
+      unindexed: extractExplainDetails(productUnindexedExplain, true),
     },
   };
 

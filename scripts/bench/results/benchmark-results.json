@@ -5,41 +5,30 @@
     "os": "Windows_NT 10.0.26200 (x64)",
     "nodeVersion": "v24.18.0",
     "mongoVersion": "8.0.28",
-    "timestamp": "2026-07-26T09:30:50.761Z"
+    "timestamp": "2026-07-26T09:43:11.239Z"
   },
   "explain": {
     "productQuery": {
       "description": "Product.find({ status: \"available\", category: \"book\" }).sort({ createdAt: -1 }).limit(12)",
       "indexed": {
-        "executionTimeMillis": 0,
+        "executionTimeMillis": 2,
+        "executionTimeFormatted": "2 ms",
         "totalDocsExamined": 12,
         "totalKeysExamined": 12,
-        "winningPlanStage": "FETCH",
+        "winningPlanStage": "LIMIT",
+        "winningPlanDetails": "LIMIT -> FETCH -> IXSCAN (status_1_category_1_createdAt_-1)",
+        "indexName": "status_1_category_1_createdAt_-1",
         "nReturned": 12
       },
       "unindexed": {
-        "executionTimeMillis": 8,
+        "executionTimeMillis": 10,
+        "executionTimeFormatted": "10 ms",
         "totalDocsExamined": 10000,
         "totalKeysExamined": 0,
-        "winningPlanStage": "COLLSCAN",
+        "winningPlanStage": "SORT",
+        "winningPlanDetails": "SORT -> COLLSCAN",
+        "indexName": "None (Forced $natural COLLSCAN)",
         "nReturned": 12
-      }
-    },
-    "conversationQuery": {
-      "description": "Conversation.findOne({ product, buyer })",
-      "indexed": {
-        "executionTimeMillis": 0,
-        "totalDocsExamined": 1,
-        "totalKeysExamined": 1,
-        "winningPlanStage": "FETCH",
-        "nReturned": 1
-      },
-      "unindexed": {
-        "executionTimeMillis": 0,
-        "totalDocsExamined": 1,
-        "totalKeysExamined": 0,
-        "winningPlanStage": "COLLSCAN",
-        "nReturned": 1
       }
     }
   },
@@ -49,53 +38,65 @@
     "levels": [
       {
         "concurrency": 10,
-        "requestsPerSec": 1339.2,
-        "requestsTotal": 6696,
-        "latencyAvgMs": 6.95,
-        "latencyP50Ms": 5,
-        "latencyP95Ms": 18,
-        "latencyP99Ms": 28,
-        "throughputBytesPerSec": 11592499,
-        "throughputMBPerSec": 11.06,
+        "requestsPerSec": 1686.6,
+        "totalRequests": 8431,
+        "totalDurationSeconds": 5.02,
+        "latencyAvgMs": 5.39,
+        "latencyP50Ms": 3,
+        "latencyP95Ms": 14,
+        "latencyP99Ms": 18,
+        "latencyMaxMs": 547,
+        "latencyStddevMs": 14.83,
+        "throughputBytesPerSec": 14595277,
+        "throughputMBPerSec": 13.92,
         "errors": 0,
         "timeouts": 0
       },
       {
         "concurrency": 25,
-        "requestsPerSec": 2535.4,
-        "requestsTotal": 12675,
-        "latencyAvgMs": 9.36,
-        "latencyP50Ms": 9,
-        "latencyP95Ms": 20,
-        "latencyP99Ms": 26,
-        "throughputBytesPerSec": 21943091,
-        "throughputMBPerSec": 20.93,
+        "requestsPerSec": 2570.6,
+        "totalRequests": 12850,
+        "totalDurationSeconds": 5.03,
+        "latencyAvgMs": 9.26,
+        "latencyP50Ms": 8,
+        "latencyP95Ms": 17,
+        "latencyP99Ms": 24,
+        "latencyMaxMs": 72,
+        "latencyStddevMs": 4.69,
+        "throughputBytesPerSec": 22247834,
+        "throughputMBPerSec": 21.22,
         "errors": 0,
         "timeouts": 0
       },
       {
         "concurrency": 50,
-        "requestsPerSec": 2380.6,
-        "requestsTotal": 11900,
-        "latencyAvgMs": 20.62,
+        "requestsPerSec": 2440.81,
+        "totalRequests": 12200,
+        "totalDurationSeconds": 5.06,
+        "latencyAvgMs": 19.98,
         "latencyP50Ms": 18,
-        "latencyP95Ms": 43,
-        "latencyP99Ms": 52,
-        "throughputBytesPerSec": 20599603,
-        "throughputMBPerSec": 19.65,
+        "latencyP95Ms": 41,
+        "latencyP99Ms": 64,
+        "latencyMaxMs": 112,
+        "latencyStddevMs": 9.15,
+        "throughputBytesPerSec": 21114880,
+        "throughputMBPerSec": 20.14,
         "errors": 0,
         "timeouts": 0
       },
       {
         "concurrency": 100,
-        "requestsPerSec": 2753.8,
-        "requestsTotal": 13764,
-        "latencyAvgMs": 36.08,
-        "latencyP50Ms": 32,
-        "latencyP95Ms": 83,
-        "latencyP99Ms": 106,
-        "throughputBytesPerSec": 23823974,
-        "throughputMBPerSec": 22.72,
+        "requestsPerSec": 2780,
+        "totalRequests": 13896,
+        "totalDurationSeconds": 5.11,
+        "latencyAvgMs": 35.86,
+        "latencyP50Ms": 31,
+        "latencyP95Ms": 68,
+        "latencyP99Ms": 102,
+        "latencyMaxMs": 117,
+        "latencyStddevMs": 13.15,
+        "throughputBytesPerSec": 24054170,
+        "throughputMBPerSec": 22.94,
         "errors": 0,
         "timeouts": 0
       }
@@ -104,48 +105,58 @@
   "pooling": {
     "poolSize1": {
       "maxPoolSize": 1,
+      "minPoolSize": 1,
+      "activeConnections": 1,
+      "idleConnections": 0,
+      "queuedRequests": 49,
+      "connectionWaitTimeMs": 0,
       "concurrency": 50,
-      "totalDurationMs": 88,
-      "requestsPerSecond": 568,
-      "avgLatencyMs": 81,
-      "p50LatencyMs": 81,
-      "p95LatencyMs": 82,
-      "p99LatencyMs": 83
+      "totalDurationMs": 159,
+      "requestsPerSecond": 314,
+      "avgLatencyMs": 133,
+      "p50LatencyMs": 134,
+      "p95LatencyMs": 136,
+      "p99LatencyMs": 146
     },
     "poolSize10": {
       "maxPoolSize": 10,
+      "minPoolSize": 2,
+      "activeConnections": 10,
+      "idleConnections": 2,
+      "queuedRequests": 40,
+      "connectionWaitTimeMs": 0,
       "concurrency": 50,
-      "totalDurationMs": 64,
-      "requestsPerSecond": 781,
-      "avgLatencyMs": 56,
-      "p50LatencyMs": 55,
-      "p95LatencyMs": 59,
-      "p99LatencyMs": 59
+      "totalDurationMs": 383,
+      "requestsPerSecond": 131,
+      "avgLatencyMs": 350,
+      "p50LatencyMs": 351,
+      "p95LatencyMs": 359,
+      "p99LatencyMs": 361
     },
-    "throughputImprovementPercent": 37.5
+    "throughputImprovementPercent": -58.3
   },
   "cache": {
-    "coldCache": {
-      "latencyMs": 4,
+    "coldCacheRead": {
+      "latencyMs": 7,
       "cacheHeader": "HIT",
-      "state": "COLD"
+      "state": "COLD (MISS)"
     },
-    "warmCache": {
+    "warmCacheRead": {
       "requests": 100,
       "avgLatencyMs": 1,
       "p50LatencyMs": 1,
-      "p95LatencyMs": 2,
-      "p99LatencyMs": 5,
+      "p95LatencyMs": 3,
+      "p99LatencyMs": 10,
       "cacheHeader": "HIT",
-      "state": "WARM"
+      "state": "WARM (HIT)"
     },
-    "afterInvalidation": {
-      "postWriteLatencyMs": 175,
+    "postInvalidationRead": {
+      "latencyMs": 359,
       "cacheHeader": "MISS",
       "state": "INVALIDATED (MISS)",
       "invalidationVerified": true
     },
-    "latencyReductionPercent": 75
+    "latencyReductionPercent": 85.7
   },
   "chat": {
     "websocketScaling": [
@@ -153,10 +164,10 @@
         "concurrentUsers": 1,
         "messagesSent": 2,
         "messagesReceived": 2,
-        "avgLatencyMs": 375,
-        "p50LatencyMs": 375,
-        "p95LatencyMs": 375,
-        "p99LatencyMs": 375,
+        "avgLatencyMs": 346,
+        "p50LatencyMs": 346,
+        "p95LatencyMs": 346,
+        "p99LatencyMs": 346,
         "droppedMessages": 0,
         "reconnects": 0,
         "deliverySuccessRatePercent": 100
@@ -165,10 +176,10 @@
         "concurrentUsers": 10,
         "messagesSent": 20,
         "messagesReceived": 20,
-        "avgLatencyMs": 1019,
-        "p50LatencyMs": 1011,
-        "p95LatencyMs": 1207,
-        "p99LatencyMs": 1207,
+        "avgLatencyMs": 494,
+        "p50LatencyMs": 498,
+        "p95LatencyMs": 505,
+        "p99LatencyMs": 505,
         "droppedMessages": 0,
         "reconnects": 0,
         "deliverySuccessRatePercent": 100
@@ -177,10 +188,10 @@
         "concurrentUsers": 50,
         "messagesSent": 100,
         "messagesReceived": 100,
-        "avgLatencyMs": 2881,
-        "p50LatencyMs": 3200,
-        "p95LatencyMs": 3420,
-        "p99LatencyMs": 3456,
+        "avgLatencyMs": 3372,
+        "p50LatencyMs": 3369,
+        "p95LatencyMs": 3458,
+        "p99LatencyMs": 3458,
         "droppedMessages": 0,
         "reconnects": 0,
         "deliverySuccessRatePercent": 100
@@ -188,32 +199,32 @@
       {
         "concurrentUsers": 100,
         "messagesSent": 200,
-        "messagesReceived": 134,
-        "avgLatencyMs": 8453,
-        "p50LatencyMs": 8517,
-        "p95LatencyMs": 9833,
-        "p99LatencyMs": 10132,
-        "droppedMessages": 72,
+        "messagesReceived": 200,
+        "avgLatencyMs": 2585,
+        "p50LatencyMs": 3765,
+        "p95LatencyMs": 3946,
+        "p99LatencyMs": 3961,
+        "droppedMessages": 0,
         "reconnects": 0,
-        "deliverySuccessRatePercent": 67
+        "deliverySuccessRatePercent": 100
       }
     ],
     "wsVsPolling": {
-      "baselineWsLatencyMs": 375,
+      "baselineWsLatencyMs": 346,
       "pollingModes": [
         {
           "pollIntervalMs": 1000,
-          "simulatedAverageLatencyMs": 875,
+          "simulatedAverageLatencyMs": 846,
           "latencyOverheadMs": 500
         },
         {
           "pollIntervalMs": 2000,
-          "simulatedAverageLatencyMs": 1375,
+          "simulatedAverageLatencyMs": 1346,
           "latencyOverheadMs": 1000
         },
         {
           "pollIntervalMs": 5000,
-          "simulatedAverageLatencyMs": 2875,
+          "simulatedAverageLatencyMs": 2846,
           "latencyOverheadMs": 2500
         }
       ]
@@ -246,5 +257,5 @@
     },
     "suitePassed": true
   },
-  "generatedAt": "2026-07-26T09:31:33.305Z"
+  "generatedAt": "2026-07-26T09:43:53.845Z"
 }

@@ -2,35 +2,24 @@
   "productQuery": {
     "description": "Product.find({ status: \"available\", category: \"book\" }).sort({ createdAt: -1 }).limit(12)",
     "indexed": {
-      "executionTimeMillis": 0,
+      "executionTimeMillis": 2,
+      "executionTimeFormatted": "2 ms",
       "totalDocsExamined": 12,
       "totalKeysExamined": 12,
-      "winningPlanStage": "FETCH",
+      "winningPlanStage": "LIMIT",
+      "winningPlanDetails": "LIMIT -> FETCH -> IXSCAN (status_1_category_1_createdAt_-1)",
+      "indexName": "status_1_category_1_createdAt_-1",
       "nReturned": 12
     },
     "unindexed": {
-      "executionTimeMillis": 8,
+      "executionTimeMillis": 10,
+      "executionTimeFormatted": "10 ms",
       "totalDocsExamined": 10000,
       "totalKeysExamined": 0,
-      "winningPlanStage": "COLLSCAN",
+      "winningPlanStage": "SORT",
+      "winningPlanDetails": "SORT -> COLLSCAN",
+      "indexName": "None (Forced $natural COLLSCAN)",
       "nReturned": 12
-    }
-  },
-  "conversationQuery": {
-    "description": "Conversation.findOne({ product, buyer })",
-    "indexed": {
-      "executionTimeMillis": 0,
-      "totalDocsExamined": 1,
-      "totalKeysExamined": 1,
-      "winningPlanStage": "FETCH",
-      "nReturned": 1
-    },
-    "unindexed": {
-      "executionTimeMillis": 0,
-      "totalDocsExamined": 1,
-      "totalKeysExamined": 0,
-      "winningPlanStage": "COLLSCAN",
-      "nReturned": 1
     }
   }
 }

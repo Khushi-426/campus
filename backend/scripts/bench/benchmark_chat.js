@@ -27,7 +27,7 @@ const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: '*' } });
 
 export async function runChatBenchmark() {
-  console.log('[SOCKET.IO CHAT BENCHMARK] Measuring performance across 1, 10, 50, 100 concurrent users...');
+  console.log('[SOCKET.IO CHAT BENCHMARK] Measuring per-message end-to-end delivery latency across 1, 10, 50, 100 concurrent clients...');
   await connectDB();
   initSocket(io);
 
@@ -48,7 +48,8 @@ export async function runChatBenchmark() {
 
     let reconnectCount = 0;
     let droppedCount = 0;
-    const latencies = [];
+    const perMessageDeliveryLatencies = [];
+    const perMessageAckLatencies = [];
 
     // Connect userCount client sockets in parallel
     const connectPromises = Array.from({ length: userCount }, () => {
@@ -72,7 +73,7 @@ export async function runChatBenchmark() {
 
     const clients = await Promise.all(connectPromises);
 
-    // Send 2 messages per client with 10s timeout and small 2ms stagger
+    // Each socket emits 2 messages. For each message, measure emit -> receive timestamp & emit -> ack timestamp
     const sendPromises = [];
     let totalSent = 0;
     let totalReceived = 0;
@@ -82,31 +83,42 @@ export async function runChatBenchmark() {
       for (let m = 0; m < 2; m++) {
         totalSent++;
         const promiseIndex = i * 2 + m;
+
         sendPromises.push(
           new Promise((res) => {
             setTimeout(() => {
-              const start = Date.now();
-              const timer = setTimeout(() => {
+              const emitTimestamp = Date.now();
+              let receiveTimestamp = null;
+              let ackTimestamp = null;
+
+              const receiveTimeout = setTimeout(() => {
                 droppedCount++;
+                client.off('new_message', receiveHandler);
                 res();
               }, 10000);
+
+              const receiveHandler = (msgData) => {
+                receiveTimestamp = Date.now();
+                const singleMsgDeliveryMs = receiveTimestamp - emitTimestamp;
+                perMessageDeliveryLatencies.push(singleMsgDeliveryMs);
+                totalReceived++;
+                clearTimeout(receiveTimeout);
+                client.off('new_message', receiveHandler);
+                res();
+              };
+
+              client.on('new_message', receiveHandler);
 
               client.emit(
                 'send_message',
                 {
                   conversationId: conv._id.toString(),
-                  text: `Bench test msg conc=${userCount} client=${i} idx=${m}`,
+                  text: `Bench single msg conc=${userCount} client=${i} idx=${m}`,
                 },
                 (ackRes) => {
-                  clearTimeout(timer);
-                  const duration = Date.now() - start;
-                  if (ackRes?.success) {
-                    latencies.push(duration);
-                    totalReceived++;
-                  } else {
-                    droppedCount++;
-                  }
-                  res();
+                  ackTimestamp = Date.now();
+                  const singleMsgAckMs = ackTimestamp - emitTimestamp;
+                  perMessageAckLatencies.push(singleMsgAckMs);
                 }
               );
             }, promiseIndex * 2);
@@ -117,14 +129,14 @@ export async function runChatBenchmark() {
 
     await Promise.all(sendPromises);
 
-    // Clean up connections
+    // Clean up client connections
     clients.forEach((c) => c.close());
 
-    latencies.sort((a, b) => a - b);
-    const avgLatency = latencies.length > 0 ? Math.round(latencies.reduce((a, b) => a + b, 0) / latencies.length) : 0;
-    const p50 = latencies.length > 0 ? latencies[Math.floor(latencies.length * 0.5)] : 0;
-    const p95 = latencies.length > 0 ? latencies[Math.floor(latencies.length * 0.95)] : 0;
-    const p99 = latencies.length > 0 ? latencies[Math.floor(latencies.length * 0.99)] : 0;
+    perMessageDeliveryLatencies.sort((a, b) => a - b);
+    const avgLatency = perMessageDeliveryLatencies.length > 0 ? Math.round(perMessageDeliveryLatencies.reduce((a, b) => a + b, 0) / perMessageDeliveryLatencies.length) : 0;
+    const p50 = perMessageDeliveryLatencies.length > 0 ? perMessageDeliveryLatencies[Math.floor(perMessageDeliveryLatencies.length * 0.5)] : 0;
+    const p95 = perMessageDeliveryLatencies.length > 0 ? perMessageDeliveryLatencies[Math.floor(perMessageDeliveryLatencies.length * 0.95)] : 0;
+    const p99 = perMessageDeliveryLatencies.length > 0 ? perMessageDeliveryLatencies[Math.floor(perMessageDeliveryLatencies.length * 0.99)] : 0;
     const successRate = totalSent > 0 ? Math.round((totalReceived / totalSent) * 100 * 10) / 10 : 100;
 
     userResults.push({
@@ -141,8 +153,8 @@ export async function runChatBenchmark() {
     });
   }
 
-  // Clean up benchmark messages from collection
-  await Message.deleteMany({ text: { $regex: /^Bench test msg/ } });
+  // Cleanup benchmark messages from collection
+  await Message.deleteMany({ text: { $regex: /^Bench single msg/ } });
 
   server.close();
 

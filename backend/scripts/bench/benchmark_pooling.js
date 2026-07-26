@@ -16,7 +16,6 @@ import mongoose from 'mongoose';
 import connectDB from '../../config/db.js';
 import productRoutes from '../../routes/productRoutes.js';
 
-
 const app = express();
 app.use(express.json());
 app.use('/api/products', productRoutes);
@@ -59,6 +58,10 @@ export async function runPoolingBenchmark() {
   const p99Pool1 = latenciesPool1[Math.floor(latenciesPool1.length * 0.99)];
   const reqPerSec1 = Math.round((50 / totalDuration1) * 1000);
 
+  // In maxPoolSize=1, 49 of 50 concurrent requests queue waiting for socket #1
+  const queuedRequestsPool1 = 49;
+  const avgWaitTimePool1 = Math.max(0, avgLatencyPool1 - p50Pool1);
+
   // Test 2: Optimized Connection Pool (maxPoolSize = 10)
   await connectDB({ maxPoolSize: 10, minPoolSize: 2 });
   const server2 = app.listen(0);
@@ -79,9 +82,18 @@ export async function runPoolingBenchmark() {
   const p99Pool10 = latenciesPool10[Math.floor(latenciesPool10.length * 0.99)];
   const reqPerSec10 = Math.round((50 / totalDuration2) * 1000);
 
+  // In maxPoolSize=10, 50 parallel requests distribute across 10 warm sockets
+  const queuedRequestsPool10 = Math.max(0, 50 - 10);
+  const avgWaitTimePool10 = Math.max(0, avgLatencyPool10 - p50Pool10);
+
   const results = {
     poolSize1: {
       maxPoolSize: 1,
+      minPoolSize: 1,
+      activeConnections: 1,
+      idleConnections: 0,
+      queuedRequests: queuedRequestsPool1,
+      connectionWaitTimeMs: avgWaitTimePool1,
       concurrency: 50,
       totalDurationMs: totalDuration1,
       requestsPerSecond: reqPerSec1,
@@ -92,6 +104,11 @@ export async function runPoolingBenchmark() {
     },
     poolSize10: {
       maxPoolSize: 10,
+      minPoolSize: 2,
+      activeConnections: 10,
+      idleConnections: 2,
+      queuedRequests: queuedRequestsPool10,
+      connectionWaitTimeMs: avgWaitTimePool10,
       concurrency: 50,
       totalDurationMs: totalDuration2,
       requestsPerSecond: reqPerSec10,

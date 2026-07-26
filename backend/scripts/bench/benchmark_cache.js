@@ -72,18 +72,18 @@ function postRequest(url, payload, headers = {}) {
 }
 
 export async function runCacheBenchmark() {
-  console.log('[CACHE BENCHMARK] Measuring Cold Cache -> Warm Cache -> After Invalidation...');
+  console.log('[CACHE BENCHMARK] Measuring 3 independent GET read operations: Cold Read -> Warm Read -> Post-Invalidation Read...');
   await connectDB();
 
   const server = app.listen(0);
   const port = server.address().port;
   const baseUrl = `http://localhost:${port}/api/products`;
 
-  // 1. Cold Cache (1st request / cache miss)
+  // Operation 1: Cold Cache Read (1st GET request / cache miss)
   const coldRes = await makeRequest(baseUrl);
-  const coldLatencyMs = coldRes.duration;
+  const coldReadLatencyMs = coldRes.duration;
 
-  // 2. Warm Cache (100 requests)
+  // Operation 2: Warm Cache Reads (100 GET requests hitting in-memory cache)
   const warmLatencies = [];
   for (let i = 0; i < 100; i++) {
     const res = await makeRequest(baseUrl);
@@ -96,14 +96,14 @@ export async function runCacheBenchmark() {
   const warmP95Ms = warmLatencies[Math.floor(warmLatencies.length * 0.95)];
   const warmP99Ms = warmLatencies[Math.floor(warmLatencies.length * 0.99)];
 
-  // 3. Write Invalidation Test
+  // Operation 3: Write Invalidation Step (POST product creation invalidates cache prefix)
   const user = await User.findOne();
   const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET || 'secret', { expiresIn: '1h' });
 
-  // Make sure cache is primed
+  // Prime cache first
   await makeRequest(baseUrl);
 
-  // Trigger write (POST new product)
+  // Execute write operation (POST product)
   const newProd = await postRequest(
     baseUrl,
     {
@@ -116,9 +116,10 @@ export async function runCacheBenchmark() {
     { Authorization: `Bearer ${token}` }
   );
 
-  // Immediate read post-write
+  // Operation 4: Post-Invalidation Read (First GET request immediately AFTER write invalidation completes)
+  // Note: Only measures GET request HTTP duration, excluding POST write time.
   const postWriteRes = await makeRequest(baseUrl);
-  const postWriteLatencyMs = postWriteRes.duration;
+  const postInvalidationReadLatencyMs = postWriteRes.duration;
 
   // Cleanup created item
   if (newProd.body.product?._id) {
@@ -128,27 +129,27 @@ export async function runCacheBenchmark() {
   server.close();
 
   const results = {
-    coldCache: {
-      latencyMs: coldLatencyMs,
+    coldCacheRead: {
+      latencyMs: coldReadLatencyMs,
       cacheHeader: coldRes.cacheHeader,
-      state: 'COLD',
+      state: 'COLD (MISS)',
     },
-    warmCache: {
+    warmCacheRead: {
       requests: 100,
       avgLatencyMs: warmAvgMs,
       p50LatencyMs: warmP50Ms,
       p95LatencyMs: warmP95Ms,
       p99LatencyMs: warmP99Ms,
       cacheHeader: 'HIT',
-      state: 'WARM',
+      state: 'WARM (HIT)',
     },
-    afterInvalidation: {
-      postWriteLatencyMs,
+    postInvalidationRead: {
+      latencyMs: postInvalidationReadLatencyMs,
       cacheHeader: postWriteRes.cacheHeader,
       state: 'INVALIDATED (MISS)',
       invalidationVerified: postWriteRes.cacheHeader === 'MISS',
     },
-    latencyReductionPercent: Math.round(((coldLatencyMs - warmP50Ms) / (coldLatencyMs || 1)) * 100 * 10) / 10,
+    latencyReductionPercent: Math.round(((coldReadLatencyMs - warmP50Ms) / (coldReadLatencyMs || 1)) * 100 * 10) / 10,
   };
 
   const resultsDir = path.join(process.cwd(), 'scripts', 'bench', 'results');
