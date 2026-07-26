@@ -1,0 +1,250 @@
+{
+  "hardware": {
+    "cpu": "Intel(R) Core(TM) i5-9300H CPU @ 2.40GHz (8 cores)",
+    "ram": "7.85 GB",
+    "os": "Windows_NT 10.0.26200 (x64)",
+    "nodeVersion": "v24.18.0",
+    "mongoVersion": "8.0.28",
+    "timestamp": "2026-07-26T09:30:50.761Z"
+  },
+  "explain": {
+    "productQuery": {
+      "description": "Product.find({ status: \"available\", category: \"book\" }).sort({ createdAt: -1 }).limit(12)",
+      "indexed": {
+        "executionTimeMillis": 0,
+        "totalDocsExamined": 12,
+        "totalKeysExamined": 12,
+        "winningPlanStage": "FETCH",
+        "nReturned": 12
+      },
+      "unindexed": {
+        "executionTimeMillis": 8,
+        "totalDocsExamined": 10000,
+        "totalKeysExamined": 0,
+        "winningPlanStage": "COLLSCAN",
+        "nReturned": 12
+      }
+    },
+    "conversationQuery": {
+      "description": "Conversation.findOne({ product, buyer })",
+      "indexed": {
+        "executionTimeMillis": 0,
+        "totalDocsExamined": 1,
+        "totalKeysExamined": 1,
+        "winningPlanStage": "FETCH",
+        "nReturned": 1
+      },
+      "unindexed": {
+        "executionTimeMillis": 0,
+        "totalDocsExamined": 1,
+        "totalKeysExamined": 0,
+        "winningPlanStage": "COLLSCAN",
+        "nReturned": 1
+      }
+    }
+  },
+  "autocannon": {
+    "endpoint": "/api/products",
+    "durationSeconds": 5,
+    "levels": [
+      {
+        "concurrency": 10,
+        "requestsPerSec": 1339.2,
+        "requestsTotal": 6696,
+        "latencyAvgMs": 6.95,
+        "latencyP50Ms": 5,
+        "latencyP95Ms": 18,
+        "latencyP99Ms": 28,
+        "throughputBytesPerSec": 11592499,
+        "throughputMBPerSec": 11.06,
+        "errors": 0,
+        "timeouts": 0
+      },
+      {
+        "concurrency": 25,
+        "requestsPerSec": 2535.4,
+        "requestsTotal": 12675,
+        "latencyAvgMs": 9.36,
+        "latencyP50Ms": 9,
+        "latencyP95Ms": 20,
+        "latencyP99Ms": 26,
+        "throughputBytesPerSec": 21943091,
+        "throughputMBPerSec": 20.93,
+        "errors": 0,
+        "timeouts": 0
+      },
+      {
+        "concurrency": 50,
+        "requestsPerSec": 2380.6,
+        "requestsTotal": 11900,
+        "latencyAvgMs": 20.62,
+        "latencyP50Ms": 18,
+        "latencyP95Ms": 43,
+        "latencyP99Ms": 52,
+        "throughputBytesPerSec": 20599603,
+        "throughputMBPerSec": 19.65,
+        "errors": 0,
+        "timeouts": 0
+      },
+      {
+        "concurrency": 100,
+        "requestsPerSec": 2753.8,
+        "requestsTotal": 13764,
+        "latencyAvgMs": 36.08,
+        "latencyP50Ms": 32,
+        "latencyP95Ms": 83,
+        "latencyP99Ms": 106,
+        "throughputBytesPerSec": 23823974,
+        "throughputMBPerSec": 22.72,
+        "errors": 0,
+        "timeouts": 0
+      }
+    ]
+  },
+  "pooling": {
+    "poolSize1": {
+      "maxPoolSize": 1,
+      "concurrency": 50,
+      "totalDurationMs": 88,
+      "requestsPerSecond": 568,
+      "avgLatencyMs": 81,
+      "p50LatencyMs": 81,
+      "p95LatencyMs": 82,
+      "p99LatencyMs": 83
+    },
+    "poolSize10": {
+      "maxPoolSize": 10,
+      "concurrency": 50,
+      "totalDurationMs": 64,
+      "requestsPerSecond": 781,
+      "avgLatencyMs": 56,
+      "p50LatencyMs": 55,
+      "p95LatencyMs": 59,
+      "p99LatencyMs": 59
+    },
+    "throughputImprovementPercent": 37.5
+  },
+  "cache": {
+    "coldCache": {
+      "latencyMs": 4,
+      "cacheHeader": "HIT",
+      "state": "COLD"
+    },
+    "warmCache": {
+      "requests": 100,
+      "avgLatencyMs": 1,
+      "p50LatencyMs": 1,
+      "p95LatencyMs": 2,
+      "p99LatencyMs": 5,
+      "cacheHeader": "HIT",
+      "state": "WARM"
+    },
+    "afterInvalidation": {
+      "postWriteLatencyMs": 175,
+      "cacheHeader": "MISS",
+      "state": "INVALIDATED (MISS)",
+      "invalidationVerified": true
+    },
+    "latencyReductionPercent": 75
+  },
+  "chat": {
+    "websocketScaling": [
+      {
+        "concurrentUsers": 1,
+        "messagesSent": 2,
+        "messagesReceived": 2,
+        "avgLatencyMs": 375,
+        "p50LatencyMs": 375,
+        "p95LatencyMs": 375,
+        "p99LatencyMs": 375,
+        "droppedMessages": 0,
+        "reconnects": 0,
+        "deliverySuccessRatePercent": 100
+      },
+      {
+        "concurrentUsers": 10,
+        "messagesSent": 20,
+        "messagesReceived": 20,
+        "avgLatencyMs": 1019,
+        "p50LatencyMs": 1011,
+        "p95LatencyMs": 1207,
+        "p99LatencyMs": 1207,
+        "droppedMessages": 0,
+        "reconnects": 0,
+        "deliverySuccessRatePercent": 100
+      },
+      {
+        "concurrentUsers": 50,
+        "messagesSent": 100,
+        "messagesReceived": 100,
+        "avgLatencyMs": 2881,
+        "p50LatencyMs": 3200,
+        "p95LatencyMs": 3420,
+        "p99LatencyMs": 3456,
+        "droppedMessages": 0,
+        "reconnects": 0,
+        "deliverySuccessRatePercent": 100
+      },
+      {
+        "concurrentUsers": 100,
+        "messagesSent": 200,
+        "messagesReceived": 134,
+        "avgLatencyMs": 8453,
+        "p50LatencyMs": 8517,
+        "p95LatencyMs": 9833,
+        "p99LatencyMs": 10132,
+        "droppedMessages": 72,
+        "reconnects": 0,
+        "deliverySuccessRatePercent": 67
+      }
+    ],
+    "wsVsPolling": {
+      "baselineWsLatencyMs": 375,
+      "pollingModes": [
+        {
+          "pollIntervalMs": 1000,
+          "simulatedAverageLatencyMs": 875,
+          "latencyOverheadMs": 500
+        },
+        {
+          "pollIntervalMs": 2000,
+          "simulatedAverageLatencyMs": 1375,
+          "latencyOverheadMs": 1000
+        },
+        {
+          "pollIntervalMs": 5000,
+          "simulatedAverageLatencyMs": 2875,
+          "latencyOverheadMs": 2500
+        }
+      ]
+    }
+  },
+  "functional": {
+    "test1_Unauthenticated": {
+      "action": "POST /api/products without Bearer token",
+      "expectedStatusCode": 401,
+      "actualStatusCode": 401,
+      "passed": true
+    },
+    "test2_AuthenticatedCreate": {
+      "action": "POST /api/products with User A token",
+      "expectedStatusCode": 201,
+      "actualStatusCode": 201,
+      "passed": true
+    },
+    "test3_AuthorizationForbidden": {
+      "action": "DELETE item owned by User A using User B token",
+      "expectedStatusCode": 403,
+      "actualStatusCode": 403,
+      "passed": true
+    },
+    "test4_OwnerUpdate": {
+      "action": "PUT update item by owner User A",
+      "expectedStatusCode": 200,
+      "actualStatusCode": 200,
+      "passed": true
+    },
+    "suitePassed": true
+  },
+  "generatedAt": "2026-07-26T09:31:33.305Z"
+}

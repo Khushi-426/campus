@@ -1,0 +1,27 @@
+{
+  "test1_Unauthenticated": {
+    "action": "POST /api/products without Bearer token",
+    "expectedStatusCode": 401,
+    "actualStatusCode": 401,
+    "passed": true
+  },
+  "test2_AuthenticatedCreate": {
+    "action": "POST /api/products with User A token",
+    "expectedStatusCode": 201,
+    "actualStatusCode": 201,
+    "passed": true
+  },
+  "test3_AuthorizationForbidden": {
+    "action": "DELETE item owned by User A using User B token",
+    "expectedStatusCode": 403,
+    "actualStatusCode": 403,
+    "passed": true
+  },
+  "test4_OwnerUpdate": {
+    "action": "PUT update item by owner User A",
+    "expectedStatusCode": 200,
+    "actualStatusCode": 200,
+    "passed": true
+  },
+  "suitePassed": true
+}

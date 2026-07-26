@@ -1,7 +1,18 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
+import path from 'path';
+import fs from 'fs';
 import dns from 'dns';
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
+
+const envPath = fs.existsSync(path.resolve('backend/.env'))
+  ? path.resolve('backend/.env')
+  : fs.existsSync(path.resolve('.env'))
+  ? path.resolve('.env')
+  : path.resolve(process.cwd(), '.env');
+
+dotenv.config({ path: envPath });
+
 import User from '../models/User.js';
 import Product from '../models/Product.js';
 import Conversation from '../models/Conversation.js';
@@ -58,39 +69,55 @@ const replies = ['Yes, it is available.', 'Sure, that sounds good.', 'I can meet
 
 function pick(values, index) { return values[index % values.length]; }
 
+function getArg(flag, defaultValue) {
+  const arg = process.argv.find(a => a.startsWith(`--${flag}=`));
+  if (arg) return parseInt(arg.split('=')[1], 10);
+  const idx = process.argv.indexOf(`--${flag}`);
+  if (idx !== -1 && process.argv[idx + 1]) return parseInt(process.argv[idx + 1], 10);
+  return defaultValue;
+}
+
 async function seed() {
   if (!process.env.MONGO_URI) throw new Error('MONGO_URI is required');
   await mongoose.connect(process.env.MONGO_URI);
 
   const isBench = process.argv.includes('--bench');
-  const targetCount = isBench ? 10000 : 500;
+  const targetProducts = getArg('products', isBench ? 10000 : 500);
+  const targetUsers = getArg('users', isBench ? 100 : 30);
+  const targetConversations = getArg('conversations', isBench ? 500 : 12);
+  const targetMessages = getArg('messages', isBench ? 20000 : 300);
 
-  console.log(`Starting database seed targetCount=${targetCount}...`);
+  console.log(`Starting database seed: products=${targetProducts}, users=${targetUsers}, conversations=${targetConversations}, messages=${targetMessages}...`);
   await Promise.all([Message.deleteMany({}), Conversation.deleteMany({}), Product.deleteMany({}), User.deleteMany({})]);
 
   const password = await bcrypt.hash(process.env.SEED_PASSWORD || 'CampusTradeDev123!', 10);
-  const users = await User.insertMany(firstNames.map((name, index) => ({
-    name: `${name} ${['Sharma', 'Patel', 'Reddy', 'Singh', 'Gupta'][index % 5]}`,
-    email: `${name.toLowerCase()}.${index + 1}@campustrade.test`,
-    password,
-    year: (index % 4) + 1,
-    branch: pick(branches, index),
-    phone: `90000${String(index).padStart(5, '0')}`,
-    avatarInitial: name[0],
-  })));
+  
+  const userDocs = Array.from({ length: targetUsers }, (_, index) => {
+    const fn = firstNames[index % firstNames.length];
+    const ln = ['Sharma', 'Patel', 'Reddy', 'Singh', 'Gupta', 'Verma', 'Kumar', 'Joshi', 'Mehta', 'Rao'][index % 10];
+    return {
+      name: `${fn} ${ln}`,
+      email: `user.${index + 1}@campustrade.test`,
+      password,
+      year: (index % 4) + 1,
+      branch: pick(branches, index),
+      phone: `9${String(index + 100000000).padStart(9, '0')}`,
+      avatarInitial: fn[0],
+    };
+  });
+  const users = await User.insertMany(userDocs);
 
   const productBatches = [];
   const batchSize = 1000;
 
-  for (let i = 0; i < targetCount; i += batchSize) {
-    const currentBatchSize = Math.min(batchSize, targetCount - i);
+  for (let i = 0; i < targetProducts; i += batchSize) {
+    const currentBatchSize = Math.min(batchSize, targetProducts - i);
     const batch = Array.from({ length: currentBatchSize }, (_, idx) => {
       const index = i + idx;
       const category = pick(categories, index);
       const item = pick(catalogue[category], index * 3 + Math.floor(index / categories.length));
       const createdAt = new Date(Date.now() - (index * 3 * 60 * 60 * 1000));
       
-      // 85% get category-matched realistic images (1 to 3 images), 15% have no image to test SVG fallback glyphs
       const hasImage = index % 7 !== 0;
       let images = [];
       if (hasImage) {
@@ -121,35 +148,52 @@ async function seed() {
 
   const conversations = [];
   const messages = [];
-  for (let index = 0; index < 12; index += 1) {
-    const product = productBatches[index * 7];
-    const buyer = users[(index + 11) % users.length];
-    const messageCount = 20 + ((index * 7) % 31);
-    const startedAt = new Date(Date.now() - ((14 - index) * 24 * 60 * 60 * 1000));
+  const msgsPerConv = Math.max(1, Math.floor(targetMessages / targetConversations));
+
+  for (let index = 0; index < targetConversations; index += 1) {
+    const product = productBatches[index % productBatches.length];
+    const sellerId = product.seller;
+    const buyer = users[(index + 1) % users.length];
+    const buyerId = String(buyer._id) === String(sellerId) ? users[(index + 2) % users.length]._id : buyer._id;
+
+    const startedAt = new Date(Date.now() - ((targetConversations - index) * 60 * 60 * 1000));
     const conversation = new Conversation({
       product: product._id,
-      buyer: buyer._id,
-      seller: product.seller,
-      lastMessageAt: new Date(startedAt.getTime() + messageCount * 8 * 60 * 1000),
+      buyer: buyerId,
+      seller: sellerId,
+      lastMessageAt: new Date(startedAt.getTime() + msgsPerConv * 60 * 1000),
     });
-    const thread = Array.from({ length: messageCount }, (_, messageIndex) => {
+
+    const thread = Array.from({ length: msgsPerConv }, (_, messageIndex) => {
       const isBuyer = messageIndex % 2 === 0;
-      const createdAt = new Date(startedAt.getTime() + messageIndex * 8 * 60 * 1000);
+      const createdAt = new Date(startedAt.getTime() + messageIndex * 60 * 1000);
       return {
         conversation: conversation._id,
-        sender: isBuyer ? buyer._id : product.seller,
+        sender: isBuyer ? buyerId : sellerId,
         text: isBuyer ? pick(openings, messageIndex + index) : pick(replies, messageIndex + index),
-        readBy: [isBuyer ? buyer._id : product.seller],
+        readBy: [isBuyer ? buyerId : sellerId],
         createdAt,
         updatedAt: createdAt,
       };
     });
+
     conversation.lastMessage = thread[thread.length - 1].text;
     conversations.push(conversation);
     messages.push(...thread);
   }
-  await Conversation.insertMany(conversations);
-  await Message.insertMany(messages);
+
+  // Insert conversations and messages in batches if large
+  const convBatches = [];
+  for (let i = 0; i < conversations.length; i += 500) {
+    convBatches.push(conversations.slice(i, i + 500));
+  }
+  for (const batch of convBatches) {
+    await Conversation.insertMany(batch);
+  }
+
+  for (let i = 0; i < messages.length; i += 2000) {
+    await Message.insertMany(messages.slice(i, i + 2000));
+  }
 
   console.log(`Seeded ${users.length} users, ${productBatches.length} products, ${conversations.length} conversations, and ${messages.length} messages.`);
   await mongoose.disconnect();
@@ -160,3 +204,4 @@ seed().catch(async (error) => {
   await mongoose.disconnect();
   process.exitCode = 1;
 });
+

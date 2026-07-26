@@ -1,0 +1,58 @@
+{
+  "endpoint": "/api/products",
+  "durationSeconds": 5,
+  "levels": [
+    {
+      "concurrency": 10,
+      "requestsPerSec": 1339.2,
+      "requestsTotal": 6696,
+      "latencyAvgMs": 6.95,
+      "latencyP50Ms": 5,
+      "latencyP95Ms": 18,
+      "latencyP99Ms": 28,
+      "throughputBytesPerSec": 11592499,
+      "throughputMBPerSec": 11.06,
+      "errors": 0,
+      "timeouts": 0
+    },
+    {
+      "concurrency": 25,
+      "requestsPerSec": 2535.4,
+      "requestsTotal": 12675,
+      "latencyAvgMs": 9.36,
+      "latencyP50Ms": 9,
+      "latencyP95Ms": 20,
+      "latencyP99Ms": 26,
+      "throughputBytesPerSec": 21943091,
+      "throughputMBPerSec": 20.93,
+      "errors": 0,
+      "timeouts": 0
+    },
+    {
+      "concurrency": 50,
+      "requestsPerSec": 2380.6,
+      "requestsTotal": 11900,
+      "latencyAvgMs": 20.62,
+      "latencyP50Ms": 18,
+      "latencyP95Ms": 43,
+      "latencyP99Ms": 52,
+      "throughputBytesPerSec": 20599603,
+      "throughputMBPerSec": 19.65,
+      "errors": 0,
+      "timeouts": 0
+    },
+    {
+      "concurrency": 100,
+      "requestsPerSec": 2753.8,
+      "requestsTotal": 13764,
+      "latencyAvgMs": 36.08,
+      "latencyP50Ms": 32,
+      "latencyP95Ms": 83,
+      "latencyP99Ms": 106,
+      "throughputBytesPerSec": 23823974,
+      "throughputMBPerSec": 22.72,
+      "errors": 0,
+      "timeouts": 0
+    }
+  ]
+}

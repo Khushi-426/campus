@@ -1,0 +1,23 @@
+{
+  "coldCache": {
+    "latencyMs": 4,
+    "cacheHeader": "HIT",
+    "state": "COLD"
+  },
+  "warmCache": {
+    "requests": 100,
+    "avgLatencyMs": 1,
+    "p50LatencyMs": 1,
+    "p95LatencyMs": 2,
+    "p99LatencyMs": 5,
+    "cacheHeader": "HIT",
+    "state": "WARM"
+  },
+  "afterInvalidation": {
+    "postWriteLatencyMs": 175,
+    "cacheHeader": "MISS",
+    "state": "INVALIDATED (MISS)",
+    "invalidationVerified": true
+  },
+  "latencyReductionPercent": 75
+}

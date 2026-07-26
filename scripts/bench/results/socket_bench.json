@@ -1,0 +1,72 @@
+{
+  "websocketScaling": [
+    {
+      "concurrentUsers": 1,
+      "messagesSent": 2,
+      "messagesReceived": 2,
+      "avgLatencyMs": 375,
+      "p50LatencyMs": 375,
+      "p95LatencyMs": 375,
+      "p99LatencyMs": 375,
+      "droppedMessages": 0,
+      "reconnects": 0,
+      "deliverySuccessRatePercent": 100
+    },
+    {
+      "concurrentUsers": 10,
+      "messagesSent": 20,
+      "messagesReceived": 20,
+      "avgLatencyMs": 1019,
+      "p50LatencyMs": 1011,
+      "p95LatencyMs": 1207,
+      "p99LatencyMs": 1207,
+      "droppedMessages": 0,
+      "reconnects": 0,
+      "deliverySuccessRatePercent": 100
+    },
+    {
+      "concurrentUsers": 50,
+      "messagesSent": 100,
+      "messagesReceived": 100,
+      "avgLatencyMs": 2881,
+      "p50LatencyMs": 3200,
+      "p95LatencyMs": 3420,
+      "p99LatencyMs": 3456,
+      "droppedMessages": 0,
+      "reconnects": 0,
+      "deliverySuccessRatePercent": 100
+    },
+    {
+      "concurrentUsers": 100,
+      "messagesSent": 200,
+      "messagesReceived": 134,
+      "avgLatencyMs": 8453,
+      "p50LatencyMs": 8517,
+      "p95LatencyMs": 9833,
+      "p99LatencyMs": 10132,
+      "droppedMessages": 72,
+      "reconnects": 0,
+      "deliverySuccessRatePercent": 67
+    }
+  ],
+  "wsVsPolling": {
+    "baselineWsLatencyMs": 375,
+    "pollingModes": [
+      {
+        "pollIntervalMs": 1000,
+        "simulatedAverageLatencyMs": 875,
+        "latencyOverheadMs": 500
+      },
+      {
+        "pollIntervalMs": 2000,
+        "simulatedAverageLatencyMs": 1375,
+        "latencyOverheadMs": 1000
+      },
+      {
+        "pollIntervalMs": 5000,
+        "simulatedAverageLatencyMs": 2875,
+        "latencyOverheadMs": 2500
+      }
+    ]
+  }
+}

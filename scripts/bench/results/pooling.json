@@ -1,0 +1,23 @@
+{
+  "poolSize1": {
+    "maxPoolSize": 1,
+    "concurrency": 50,
+    "totalDurationMs": 88,
+    "requestsPerSecond": 568,
+    "avgLatencyMs": 81,
+    "p50LatencyMs": 81,
+    "p95LatencyMs": 82,
+    "p99LatencyMs": 83
+  },
+  "poolSize10": {
+    "maxPoolSize": 10,
+    "concurrency": 50,
+    "totalDurationMs": 64,
+    "requestsPerSecond": 781,
+    "avgLatencyMs": 56,
+    "p50LatencyMs": 55,
+    "p95LatencyMs": 59,
+    "p99LatencyMs": 59
+  },
+  "throughputImprovementPercent": 37.5
+}
