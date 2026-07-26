@@ -122,8 +122,18 @@ export default function Header() {
           </div>
         )}
 
+        {user && user.role === 'admin' && (
+          <button
+            className="btn-purple-solid"
+            onClick={() => navigate('/admin')}
+            style={{ padding: '6px 14px', fontSize: 13, gap: 6 }}
+          >
+            🛡️ Admin Console
+          </button>
+        )}
+
         {user ? (
-          <div className="top-user-avatar-chip" title={user.name}>
+          <div className="top-user-avatar-chip" title={`${user.name} (${(user.role || 'user').toUpperCase()})`} style={{ border: user?.role === 'admin' ? '2px solid #6366f1' : 'none' }}>
             {user.name?.[0] || 'U'}
           </div>
         ) : (

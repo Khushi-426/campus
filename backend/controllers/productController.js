@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import mongoose from 'mongoose';
 import Product from '../models/Product.js';
 import Favorite from '../models/Favorite.js';
 import Conversation from '../models/Conversation.js';
@@ -124,6 +125,10 @@ export const getProducts = async (req, res) => {
 // GET /api/products/:id - Optimized viewCount increment with IP deduplication & fire-and-forget write
 export const getProductById = async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid product ID format' });
+    }
+
     const product = await Product.findById(req.params.id)
       .populate('seller', 'name year branch email phone')
       .lean();
@@ -176,6 +181,10 @@ export const createProduct = async (req, res) => {
 // PUT /api/products/:id - Update product & trigger notifications (price drop / item sold)
 export const updateProduct = async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid product ID format' });
+    }
+
     const product = await Product.findById(req.params.id);
     if (!product) return res.status(404).json({ message: 'Product not found' });
     if (String(product.seller) !== String(req.user._id)) {
@@ -250,6 +259,10 @@ export const updateProduct = async (req, res) => {
 
 export const deleteProduct = async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid product ID format' });
+    }
+
     const product = await Product.findById(req.params.id);
     if (!product) return res.status(404).json({ message: 'Product not found' });
     if (String(product.seller) !== String(req.user._id)) {

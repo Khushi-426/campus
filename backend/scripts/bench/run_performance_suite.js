@@ -6,6 +6,8 @@ import { runCompressionBench } from './bench_compression.js';
 import { runHttpCachingBench } from './bench_http_caching.js';
 import { runCacheKeyBench } from './bench_cache_key.js';
 import { runFrontendPerfBench } from './bench_frontend_perf.js';
+import { runPoolingBenchmark } from './benchmark_pooling.js';
+import { runIndexingBenchmark } from './benchmark_indexing.js';
 
 async function runSuite() {
   console.log('====================================================');
@@ -31,6 +33,12 @@ async function runSuite() {
     console.log('\n');
 
     suite.frontendPerf = await runFrontendPerfBench();
+    console.log('\n');
+
+    suite.pooling = await runPoolingBenchmark();
+    console.log('\n');
+
+    suite.indexing = await runIndexingBenchmark();
     console.log('\n');
 
     console.log('====================================================');
@@ -64,12 +72,12 @@ node scripts/bench/run_performance_suite.js
 - **Script**: \`backend/scripts/bench/bench_view_count.js\`
 - **Fix**: Replaced synchronous \`findByIdAndUpdate({ $inc: { viewCount: 1 } })\` on every read with in-memory IP/session deduplication (10-min TTL) and fire-and-forget background updates.
 
-| Metric (50 Concurrent Requests) | Synchronous DB Write on Read | Deduplicated Fire-and-Forget Read | Latency Reduction |
+| Metric (50 Concurrent Requests) | Synchronous DB Write on Read | Deduplicated Fire-and-Forget Read | Latency Impact |
 | :--- | :--- | :--- | :--- |
-| **p50 Read Latency** | ${suite.viewCount.syncWriteOnRead.p50LatencyMs} ms | **${suite.viewCount.fireAndForgetRead.p50LatencyMs} ms** | **${suite.viewCount.improvement.p50ReductionPercent}** |
-| **p99 Read Latency** | ${suite.viewCount.syncWriteOnRead.p99LatencyMs} ms | **${suite.viewCount.fireAndForgetRead.p99LatencyMs} ms** | **${suite.viewCount.improvement.p99ReductionPercent}** |
+| **p50 Read Latency** | ${suite.viewCount.syncWriteOnRead.p50LatencyMs} ms | **${suite.viewCount.fireAndForgetRead.p50LatencyMs} ms** | Bound by network I/O |
+| **p99 Read Latency** | ${suite.viewCount.syncWriteOnRead.p99LatencyMs} ms | **${suite.viewCount.fireAndForgetRead.p99LatencyMs} ms** | **${suite.viewCount.improvement.p99ReductionPercent} reduction** |
 
-> **Resume Bullet**: *"Eliminated write contention on hot read path by replacing synchronous MongoDB \`$inc viewCount\` writes with IP-deduplicated in-memory tracking and fire-and-forget background updates, reducing p50 read latency by ${suite.viewCount.improvement.p50ReductionPercent} under concurrent load."*
+> **Resume Bullet**: *"Eliminated write contention on hot read path by replacing synchronous MongoDB \`$inc viewCount\` writes with IP-deduplicated in-memory tracking and fire-and-forget background updates, preventing write-lock queueing under concurrent user loads."*
 
 ---
 
@@ -119,6 +127,30 @@ node scripts/bench/run_performance_suite.js
 | **Product Grid Images** | Immediate download | \`loading="lazy"\` | Offscreen image deferral |
 
 > **Resume Bullet**: *"Optimized frontend network traffic by debouncing search input keystrokes by 300ms (reducing query requests by 90%) and implementing native image lazy loading."*
+
+---
+
+## 7. MongoDB Connection Pooling (\`maxPoolSize\` / \`minPoolSize\`)
+- **Script**: \`backend/scripts/bench/benchmark_pooling.js\`
+
+| Pool Configuration | Concurrency | Total Duration (ms) | Requests / Sec | p50 Latency | p99 Latency |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Pool Size = 10** | 50 | ${suite.pooling.poolSize10.totalDurationMs} ms | ${suite.pooling.poolSize10.requestsPerSecond} req/s | ${suite.pooling.poolSize10.p50LatencyMs} ms | ${suite.pooling.poolSize10.p99LatencyMs} ms |
+| **Pool Size = 1** | 50 | ${suite.pooling.poolSize1.totalDurationMs} ms | ${suite.pooling.poolSize1.requestsPerSecond} req/s | ${suite.pooling.poolSize1.p50LatencyMs} ms | ${suite.pooling.poolSize1.p99LatencyMs} ms |
+
+> **Resume Bullet**: *"Configured explicit Mongoose connection pooling (\`maxPoolSize: 10\`, \`minPoolSize: 2\`), preventing connection starvation under high concurrent HTTP request bursts."*
+
+---
+
+## 8. Compound Index Execution Analysis (\`.explain("executionStats")\`)
+- **Script**: \`backend/scripts/bench/benchmark_indexing.js\`
+
+| Query Strategy | Winning Stage | Docs Examined | Execution Time |
+| :--- | :--- | :--- | :--- |
+| **With Compound Index \`{ status: 1, category: 1, createdAt: -1 }\`** | **${suite.indexing.withIndex.stage}** | **${suite.indexing.withIndex.totalDocsExamined}** | **${suite.indexing.withIndex.executionTimeMillis} ms** |
+| **Without Index (Natural Scan)** | ${suite.indexing.withoutIndex.stage} | ${suite.indexing.withoutIndex.totalDocsExamined} | ${suite.indexing.withoutIndex.executionTimeMillis} ms |
+
+> **Resume Bullet**: *"Optimized feed query performance by creating compound indexes on \`{ status: 1, category: 1, createdAt: -1 }\`, eliminating full collection scans (\`COLLSCAN\`) in MongoDB."*
 `;
 
     fs.writeFileSync(path.join(process.cwd(), '../PERFORMANCE.md'), performanceMdContent);

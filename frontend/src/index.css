@@ -993,3 +993,48 @@ button:disabled, .btn:disabled {
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
+
+/* ==========================================================================
+   RESPONSIVE DESIGN (< 600px)
+   ========================================================================== */
+@media (max-width: 600px) {
+  .hero-card-saas {
+    flex-direction: column;
+    padding: 24px 16px;
+    text-align: center;
+  }
+  .hero-card-btns {
+    justify-content: center;
+    width: 100%;
+  }
+  .hero-card-btns a {
+    width: 100%;
+  }
+  .hero-vector-illustration {
+    display: none;
+  }
+  .products-grid-saas {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+  }
+  .card-saas-body {
+    padding: 10px;
+  }
+  .card-saas-title {
+    font-size: 13px;
+    height: 34px;
+  }
+  .price-bold {
+    font-size: 14px;
+  }
+  .sell-split-layout {
+    grid-template-columns: 1fr !important;
+  }
+  .preview-sticky-box {
+    position: relative !important;
+    top: 0 !important;
+  }
+  .chat-layout {
+    grid-template-columns: 1fr !important;
+  }
+}

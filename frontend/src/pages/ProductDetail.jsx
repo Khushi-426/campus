@@ -167,6 +167,33 @@ export default function ProductDetail() {
               <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
             </svg>
           </button>
+
+          <button
+            className="icon-circle-btn"
+            style={{ color: 'var(--text-muted)' }}
+            title="Report Policy Violation to Admin"
+            onClick={async () => {
+              if (!user) {
+                navigate('/login');
+                return;
+              }
+              const reason = window.prompt('Please describe the policy violation or reason for reporting this listing:');
+              if (reason && reason.trim()) {
+                try {
+                  await api.post('/admin/reports', {
+                    targetType: 'product',
+                    targetId: id,
+                    reason: reason.trim(),
+                  });
+                  alert('Thank you. Your report has been submitted to Campus Admins.');
+                } catch (err) {
+                  alert(err.response?.data?.message || 'Failed to submit report.');
+                }
+              }
+            }}
+          >
+            🚩
+          </button>
         </div>
       </div>
 

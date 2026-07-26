@@ -13,10 +13,16 @@ import MyListings from './pages/MyListings';
 import Chat from './pages/Chat';
 
 import Saved from './pages/Saved';
+import AdminDashboard from './pages/AdminDashboard';
 
 function PrivateRoute({ children }) {
   const { user } = useAuth();
   return user ? children : <Navigate to="/login" replace />;
+}
+
+function AdminRoute({ children }) {
+  const { user } = useAuth();
+  return user && user.role === 'admin' ? children : <Navigate to="/" replace />;
 }
 
 function AppRoutes() {
@@ -35,6 +41,14 @@ function AppRoutes() {
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/product/:id" element={<ProductDetail />} />
+              <Route
+                path="/admin"
+                element={
+                  <AdminRoute>
+                    <AdminDashboard />
+                  </AdminRoute>
+                }
+              />
               <Route
                 path="/saved"
                 element={

@@ -17,6 +17,7 @@ import chatRoutes from './routes/chatRoutes.js';
 import favoriteRoutes from './routes/favoriteRoutes.js';
 import reviewRoutes from './routes/reviewRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
+import adminRoutes from './routes/adminRoutes.js';
 
 connectDB({ maxPoolSize: 10, minPoolSize: 2 });
 
@@ -61,6 +62,7 @@ app.use('/api/chat', chatRoutes);
 app.use('/api/favorites', favoriteRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Central error handler
 app.use((err, req, res, next) => {

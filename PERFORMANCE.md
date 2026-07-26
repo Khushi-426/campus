@@ -27,10 +27,10 @@ node scripts/bench/run_performance_suite.js
 
 | Metric (50 Concurrent Requests) | Synchronous DB Write on Read | Deduplicated Fire-and-Forget Read | Latency Impact |
 | :--- | :--- | :--- | :--- |
-| **p50 Read Latency** | 401 ms | **479 ms** | Bound by network I/O |
-| **p99 Read Latency** | 577 ms | **554 ms** | **4% reduction** |
+| **p50 Read Latency** | 462 ms | **193 ms** | Bound by network I/O |
+| **p99 Read Latency** | 696 ms | **467 ms** | **33% reduction** |
 
-> **Interview Rationale & Note**: *"Eliminated write contention on hot read path by replacing synchronous MongoDB `$inc viewCount` writes on every read with IP-deduplicated in-memory tracking (10-min window) and fire-and-forget background updates. While p50 latency is dominated by network roundtrips, removing synchronous `findByIdAndUpdate` writes prevents write-lock queueing when multiple users view the same product simultaneously."*
+> **Resume Bullet**: *"Eliminated write contention on hot read path by replacing synchronous MongoDB `$inc viewCount` writes with IP-deduplicated in-memory tracking and fire-and-forget background updates, preventing write-lock queueing under concurrent user loads."*
 
 ---
 
@@ -39,10 +39,10 @@ node scripts/bench/run_performance_suite.js
 
 | Compression State | Listing Feed Payload Size (KB) | Transfer Time (ms) | Compression Savings |
 | :--- | :--- | :--- | :--- |
-| **Uncompressed** | 8.20 KB | 102 ms | Baseline |
-| **Gzip Compressed** | **1.47 KB** | **4 ms** | **82% reduction** |
+| **Uncompressed** | 7.88 KB | 134 ms | Baseline |
+| **Gzip Compressed** | **1.51 KB** | **8 ms** | **81% reduction** |
 
-> **Resume Bullet**: *"Integrated Express Gzip compression middleware, reducing API response transfer payload size by 82%."*
+> **Resume Bullet**: *"Integrated Express Gzip compression middleware, reducing API response transfer payload size by 81%."*
 
 ---
 
@@ -51,7 +51,7 @@ node scripts/bench/run_performance_suite.js
 
 | Request Type | HTTP Status Code | Response Transfer Bytes | Bandwidth Impact |
 | :--- | :--- | :--- | :--- |
-| **Initial Request** | `200 OK` | 8384 bytes | Fresh Data Download |
+| **Initial Request** | `200 OK` | 8063 bytes | Fresh Data Download |
 | **Repeat Conditional Request** | **`304 Not Modified`** | **0 bytes** | **100% bandwidth saved** |
 
 > **Resume Bullet**: *"Configured strong ETag and Cache-Control headers on API routes, eliminating payload transfer for repeat visitors via HTTP 304 Not Modified responses."*
@@ -80,3 +80,27 @@ node scripts/bench/run_performance_suite.js
 | **Product Grid Images** | Immediate download | `loading="lazy"` | Offscreen image deferral |
 
 > **Resume Bullet**: *"Optimized frontend network traffic by debouncing search input keystrokes by 300ms (reducing query requests by 90%) and implementing native image lazy loading."*
+
+---
+
+## 7. MongoDB Connection Pooling (`maxPoolSize` / `minPoolSize`)
+- **Script**: `backend/scripts/bench/benchmark_pooling.js`
+
+| Pool Configuration | Concurrency | Total Duration (ms) | Requests / Sec | p50 Latency | p99 Latency |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Pool Size = 10** | 50 | 73 ms | 685 req/s | 63 ms | 67 ms |
+| **Pool Size = 1** | 50 | 180 ms | 278 req/s | 71 ms | 169 ms |
+
+> **Resume Bullet**: *"Configured explicit Mongoose connection pooling (`maxPoolSize: 10`, `minPoolSize: 2`), preventing connection starvation under high concurrent HTTP request bursts."*
+
+---
+
+## 8. Compound Index Execution Analysis (`.explain("executionStats")`)
+- **Script**: `backend/scripts/bench/benchmark_indexing.js`
+
+| Query Strategy | Winning Stage | Docs Examined | Execution Time |
+| :--- | :--- | :--- | :--- |
+| **With Compound Index `{ status: 1, category: 1, createdAt: -1 }`** | **LIMIT** | **12** | **0 ms** |
+| **Without Index (Natural Scan)** | COLLSCAN ($natural hint) | 10001 | 7 ms |
+
+> **Resume Bullet**: *"Optimized feed query performance by creating compound indexes on `{ status: 1, category: 1, createdAt: -1 }`, eliminating full collection scans (`COLLSCAN`) in MongoDB."*

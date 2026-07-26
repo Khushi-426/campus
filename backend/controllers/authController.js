@@ -13,6 +13,8 @@ const sanitize = (user) => ({
   year: user.year,
   branch: user.branch,
   phone: user.phone,
+  role: user.role || 'user',
+  isSuspended: user.isSuspended || false,
 });
 
 export const register = async (req, res) => {

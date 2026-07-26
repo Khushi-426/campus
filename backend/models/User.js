@@ -19,6 +19,8 @@ const userSchema = new mongoose.Schema(
     branch: { type: String, trim: true },
     phone: { type: String, trim: true },
     avatarInitial: { type: String, default: '' },
+    role: { type: String, enum: ['user', 'admin'], default: 'user', index: true },
+    isSuspended: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

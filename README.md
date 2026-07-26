@@ -45,6 +45,7 @@ campus-marketplace/
 cd backend
 cp .env.example .env      # fill in MONGO_URI and JWT_SECRET
 npm install
+node scripts/createAdmin.js  # create initial admin user account
 npm run dev                # nodemon, or `npm start`
 ```
 

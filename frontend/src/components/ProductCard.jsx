@@ -16,40 +16,43 @@ function CategorySvg({ category }) {
   }
 }
 
-export default function ProductCard({ product }) {
+export default function ProductCard({ product, isPreview = false }) {
   const { user } = useAuth();
   const [isSaved, setIsSaved] = useState(false);
   const price = product.price || 0;
   const isNegotiable = price > 500;
+  const isPreviewCard = isPreview || product._id === 'preview';
 
-  const handleFavoriteClick = async (e) => {
+  const handleFavoriteClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!user) return;
-    try {
-      const { data } = await api.post(`/favorites/${product._id}`);
-      setIsSaved(data.favorited);
-    } catch (err) {
-      console.error(err);
-    }
+    if (isPreviewCard || !user) return;
+    api.post(`/favorites/${product._id}`)
+      .then(({ data }) => setIsSaved(data.favorited))
+      .catch(console.error);
   };
+
+  const CardWrapper = isPreviewCard ? 'div' : Link;
+  const wrapperProps = isPreviewCard ? {} : { to: `/product/${product._id}` };
 
   return (
     <div className="card-saas">
       {/* Top Image Container with lazy loading */}
       <div className="card-saas-img-wrap">
-        <button
-          className="wishlist-heart-btn"
-          style={{ color: isSaved ? '#ef4444' : 'var(--text-subtle)' }}
-          title={isSaved ? 'Remove from Saved' : 'Save to Watchlist'}
-          onClick={handleFavoriteClick}
-        >
-          <svg viewBox="0 0 24 24" width="16" height="16" fill={isSaved ? '#ef4444' : 'none'} stroke="currentColor" strokeWidth="2">
-            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-          </svg>
-        </button>
+        {!isPreviewCard && (
+          <button
+            className="wishlist-heart-btn"
+            style={{ color: isSaved ? '#ef4444' : 'var(--text-subtle)' }}
+            title={isSaved ? 'Remove from Saved' : 'Save to Watchlist'}
+            onClick={handleFavoriteClick}
+          >
+            <svg viewBox="0 0 24 24" width="16" height="16" fill={isSaved ? '#ef4444' : 'none'} stroke="currentColor" strokeWidth="2">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+            </svg>
+          </button>
+        )}
 
-        <Link to={`/product/${product._id}`} style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <CardWrapper {...wrapperProps} style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: isPreviewCard ? 'default' : 'pointer' }}>
           {product.images?.[0] ? (
             <img src={product.images[0]} alt={product.title} loading="lazy" />
           ) : (
@@ -58,14 +61,14 @@ export default function ProductCard({ product }) {
               <span style={{ fontSize: 11, textTransform: 'uppercase', fontWeight: 600 }}>{product.category}</span>
             </div>
           )}
-        </Link>
+        </CardWrapper>
       </div>
 
       {/* Card Details Body */}
       <div className="card-saas-body">
-        <Link to={`/product/${product._id}`} className="card-saas-title" title={product.title}>
+        <CardWrapper {...wrapperProps} className="card-saas-title" title={product.title} style={{ cursor: isPreviewCard ? 'default' : 'pointer' }}>
           {product.title}
-        </Link>
+        </CardWrapper>
 
         <div className="card-saas-price-row">
           <span className="price-bold">
